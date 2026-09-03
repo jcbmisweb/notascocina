@@ -1,0 +1,8 @@
+{
+  "name": "Remix ORIGINAL - Student Manager for Culinary  - 2026/27",
+  "description": "ES la nueva versión desarrollada para empezar desde cero, parece que se quedan incomunicadas las IA con sus web.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

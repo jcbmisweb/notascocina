@@ -1,0 +1,512 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { PencilIcon, SaveIcon, PlusIcon, TrashIcon, ChevronDownIcon, ChevronRightIcon, XIcon, LockClosedIcon, LockOpenIcon, ExportIcon } from '../components/icons';
+import { downloadPdfWithTables, downloadExcel } from '../components/printUtils';
+import { ExportButtons } from '../components/ExportButtons';
+import { useAppContext } from '../context/AppContext';
+import { InstrumentoEvaluacion, EvaluationActivity, Student, AcademicGrades, StudentCalculatedGrades, ActivityGrade } from '../types';
+
+
+interface InstrumentoFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (data: InstrumentoEvaluacion) => void;
+    initialData: InstrumentoEvaluacion | null;
+}
+
+const InstrumentoFormModal: React.FC<InstrumentoFormModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
+    const [formData, setFormData] = useState(initialData);
+
+    React.useEffect(() => {
+        if (initialData) {
+            setFormData(JSON.parse(JSON.stringify(initialData)));
+        }
+    }, [initialData]);
+
+    if (!isOpen || !formData) return null;
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(p => ({ ...p!, [name]: name === 'pesoTotal' ? parseInt(value) || 0 : value }));
+    };
+
+    const handleActivityChange = (activityId: string, field: keyof EvaluationActivity, value: string) => {
+        const updatedActivities = formData.activities.map(act =>
+            act.id === activityId ? { ...act, [field]: value } : act
+        );
+        setFormData({ ...formData, activities: updatedActivities });
+    };
+
+    const handleAddActivity = () => {
+        const newActivity: EvaluationActivity = {
+            id: `act_${Date.now()}`,
+            name: 'Nueva Actividad',
+            trimester: 't1'
+        };
+        setFormData({ ...formData, activities: [...formData.activities, newActivity] });
+    };
+
+    const handleDeleteActivity = (activityId: string) => {
+        setFormData({ ...formData, activities: formData.activities.filter(act => act.id !== activityId) });
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSave(formData);
+    };
+
+    const title = initialData?.id.startsWith('inst_') ? 'Nuevo Instrumento' : 'Editar Instrumento';
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4 pb-4 border-b">
+                    <h3 className="text-xl font-bold text-gray-800">{title}</h3>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200"><XIcon className="w-6 h-6 text-gray-600" /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto pr-2">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Nombre</label>
+                        <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} required className="mt-1 w-full p-2 border rounded-md" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Descripción</label>
+                        <textarea name="descripcion" value={formData.descripcion} onChange={handleChange} rows={2} className="mt-1 w-full p-2 border rounded-md"></textarea>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Peso Total (%)</label>
+                        <input type="number" name="pesoTotal" value={formData.pesoTotal || ''} onChange={handleChange} min="0" max="100" className="mt-1 w-full p-2 border rounded-md" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Actividades de Evaluación</label>
+                        <div className="space-y-2 border p-3 rounded-md bg-gray-50 max-h-60 overflow-y-auto">
+                            {formData.activities.map(act => (
+                                <div key={act.id} className="flex items-center gap-2">
+                                    <input type="text" value={act.name} onChange={e => handleActivityChange(act.id, 'name', e.target.value)} className="flex-grow p-1.5 border rounded-md text-sm" placeholder="Nombre de actividad"/>
+                                    <select value={act.trimester} onChange={e => handleActivityChange(act.id, 'trimester', e.target.value)} className="p-1.5 border rounded-md text-sm bg-white">
+                                        <option value="t1">1º Trim</option>
+                                        <option value="t2">2º Trim</option>
+                                    </select>
+                                    <button type="button" onClick={() => handleDeleteActivity(act.id)} className="p-1.5 text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
+                                </div>
+                            ))}
+                             <button type="button" onClick={handleAddActivity} className="mt-2 text-sm text-blue-600 flex items-center font-semibold"><PlusIcon className="w-4 h-4 mr-1" />Añadir Actividad</button>
+                        </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-4 border-t mt-4">
+                        <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">Cancelar</button>
+                        <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center"><SaveIcon className="w-5 h-5 mr-2" />Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const getGradeForActivity = (
+    studentId: string,
+    activity: EvaluationActivity,
+    academicGrades: AcademicGrades,
+    calculatedGrades: Record<string, StudentCalculatedGrades>
+): number | null => {
+    // This function needs to be adapted if Optativa/Proyecto modules have different grading logic.
+    // For now, it assumes the same structure as PC.
+    const studentAcademic = academicGrades[studentId];
+    const studentCalculated = calculatedGrades[studentId];
+    // Placeholder logic - needs to be expanded based on how grades for new modules are stored
+    return null;
+};
+
+const GradesMatrix: React.FC<{
+    instrument: InstrumentoEvaluacion;
+}> = ({ instrument }) => {
+    const { students, instrumentGrades, setInstrumentGrades, calculatedStudentGrades } = useAppContext();
+    const sortedStudents = useMemo(() => [...students].sort((a,b) => a.apellido1.localeCompare(b.apellido1)), [students]);
+    
+    const isCalculatedInstrument = useMemo(() => {
+        const name = instrument.nombre.toLowerCase();
+        return name.includes('servicio') || name.includes('práctico') || name.includes('practico');
+    }, [instrument.nombre]);
+
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+
+    const handleGradeChange = (studentId: string, activityId: string, field: keyof ActivityGrade, value: string) => {
+        const numericValue = value === '' ? null : parseFloat(value);
+        setInstrumentGrades(prev => {
+            const studentGrades = prev[studentId] || {};
+            const activityGrade = studentGrades[activityId];
+            
+            let newActivityGrade: ActivityGrade;
+            // Helper to determine if isLocked field is being toggled
+            const isLockedField = field.startsWith('isLocked');
+            
+            if (typeof activityGrade === 'object' && activityGrade !== null && 'normal' in activityGrade) {
+                newActivityGrade = { ...activityGrade, [field]: isLockedField ? (value === 'true') : numericValue };
+            } else {
+                newActivityGrade = { 
+                    normal: field === 'normal' ? numericValue : (typeof activityGrade === 'number' ? activityGrade : null), 
+                    rec1: field === 'rec1' ? numericValue : null, 
+                    rec2: field === 'rec2' ? numericValue : null, 
+                    isLockedNormal: field === 'isLockedNormal' ? (value === 'true') : false,
+                    isLockedRec1: field === 'isLockedRec1' ? (value === 'true') : false,
+                    isLockedRec2: field === 'isLockedRec2' ? (value === 'true') : false
+                };
+            }
+
+            return {
+                ...prev,
+                [studentId]: {
+                    ...studentGrades,
+                    [activityId]: newActivityGrade
+                }
+            };
+        });
+    };
+
+    const toggleColumnLock = (activityId: string, field: 'isLockedNormal' | 'isLockedRec1' | 'isLockedRec2') => {
+        setInstrumentGrades(prev => {
+            const newGrades = { ...prev };
+            // Find current lock state of first student
+            const firstStudentId = sortedStudents[0]?.id;
+            if (!firstStudentId) return prev;
+            
+            const isCurrentlyLocked = (newGrades[firstStudentId]?.[activityId] as ActivityGrade)?.[field] ?? false;
+            
+            sortedStudents.forEach(student => {
+                const studentGrades = newGrades[student.id] || {};
+                const currentGrade = studentGrades[activityId];
+                
+                let activityGrade: ActivityGrade;
+                if (typeof currentGrade === 'object' && currentGrade !== null && 'normal' in currentGrade) {
+                    activityGrade = { ...currentGrade, [field]: !isCurrentlyLocked };
+                } else {
+                    activityGrade = { 
+                        normal: (typeof currentGrade === 'number' || (typeof currentGrade === 'object' && currentGrade !== null && 'normal' in currentGrade)) ? (typeof currentGrade === 'number' ? currentGrade : (currentGrade as ActivityGrade).normal) : null, 
+                        rec1: (typeof currentGrade === 'object' && currentGrade !== null && 'rec1' in currentGrade) ? (currentGrade as ActivityGrade).rec1 : null, 
+                        rec2: (typeof currentGrade === 'object' && currentGrade !== null && 'rec2' in currentGrade) ? (currentGrade as ActivityGrade).rec2 : null, 
+                        isLockedNormal: field === 'isLockedNormal' ? !isCurrentlyLocked : (typeof currentGrade === 'object' && currentGrade !== null && 'isLockedNormal' in currentGrade ? (currentGrade as ActivityGrade).isLockedNormal : false),
+                        isLockedRec1: field === 'isLockedRec1' ? !isCurrentlyLocked : (typeof currentGrade === 'object' && currentGrade !== null && 'isLockedRec1' in currentGrade ? (currentGrade as ActivityGrade).isLockedRec1 : false),
+                        isLockedRec2: field === 'isLockedRec2' ? !isCurrentlyLocked : (typeof currentGrade === 'object' && currentGrade !== null && 'isLockedRec2' in currentGrade ? (currentGrade as ActivityGrade).isLockedRec2 : false)
+                    };
+                }
+                newGrades[student.id] = { ...studentGrades, [activityId]: activityGrade };
+            });
+            
+            return newGrades;
+        });
+    };
+
+    const handlePasteColumn = (e: React.ClipboardEvent, startIndex: number, activityId: string, field: 'normal' | 'rec1' | 'rec2') => {
+        e.preventDefault();
+        const text = e.clipboardData.getData('text');
+        const rows = text.split(/\r?\n/).filter(r => r.trim() !== '');
+        
+        setInstrumentGrades(prev => {
+            const newGrades = JSON.parse(JSON.stringify(prev));
+            rows.forEach((rowValue, i) => {
+                const studentIndex = startIndex + i;
+                if (studentIndex < sortedStudents.length) {
+                    const student = sortedStudents[studentIndex];
+                    const numericValue = parseFloat(rowValue.trim().replace(',', '.'));
+                    if (!isNaN(numericValue) && numericValue >= 0 && numericValue <= 10) {
+                        const studentGrades = newGrades[student.id] || {};
+                        const currentGrade = studentGrades[activityId];
+                        
+                        let activityGrade: ActivityGrade;
+                        if (typeof currentGrade === 'object' && currentGrade !== null && 'normal' in currentGrade) {
+                            activityGrade = { ...currentGrade, [field]: numericValue };
+                        } else {
+                            activityGrade = { 
+                                normal: field === 'normal' ? numericValue : (typeof currentGrade === 'number' ? currentGrade : null), 
+                                rec1: field === 'rec1' ? numericValue : null, 
+                                rec2: field === 'rec2' ? numericValue : null, 
+                                isLockedNormal: false,
+                                isLockedRec1: false,
+                                isLockedRec2: false
+                            };
+                        }
+                        newGrades[student.id] = { ...studentGrades, [activityId]: activityGrade };
+                    }
+                }
+            });
+            return newGrades;
+        });
+    };
+
+    const handleExport = (format: 'pdf' | 'excel') => {
+        const headers = [['Alumno', ...instrument.activities.map(a => `${a.name} (T${a.trimester.toUpperCase()})`)]];
+        const bodies = [sortedStudents.map(student => [
+            `${student.apellido1} ${student.apellido2}, ${student.nombre}`,
+            ...instrument.activities.map(act => {
+                 const g = instrumentGrades[student.id]?.[act.id];
+                 const grade = typeof g === 'object' && g !== null && 'normal' in g ? g.normal : (typeof g === 'number' ? g : null);
+                 return grade?.toFixed(2) ?? '-';
+            })
+        ])];
+
+        if (format === 'pdf') downloadPdfWithTables(`Instrumento: ${instrument.nombre}`, headers, bodies, {name: 'Teacher'}, {name: 'Institute'});
+        else downloadExcel(`Instrumento: ${instrument.nombre}`, headers, bodies);
+    };
+
+    if(instrument.activities.length === 0) {
+        return <div className="text-center text-sm text-gray-500 py-4">Este instrumento no tiene actividades de evaluación definidas.</div>
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-600 font-semibold text-xs uppercase">Desglose de Notas</span>
+                <ExportButtons onExportPdf={() => handleExport('pdf')} onExportExcel={() => handleExport('excel')} />
+            </div>
+            <table className="min-w-full text-xs">
+                <thead className="bg-gray-200">
+                    <tr>
+                        <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 bg-gray-200">Alumno</th>
+                        {instrument.activities.map(act => (
+                            <th key={act.id} className="p-2 border font-semibold text-gray-600 text-center" colSpan={4}>{act.name} ({act.trimester.toUpperCase()})</th>
+                        ))}
+                    </tr>
+                    <tr>
+                        <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 bg-gray-200"></th>
+                        {instrument.activities.map(act => (
+                            <React.Fragment key={act.id}>
+                                <th className="p-1 border text-center">
+                                     <button onClick={() => toggleColumnLock(act.id, 'isLockedNormal')} className="focus:outline-none">
+                                        {(sortedStudents.length > 0 && (instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedNormal) ? 
+                                            <LockClosedIcon className="w-5 h-5 text-red-600 hover:text-red-800 mx-auto" /> : 
+                                            <LockOpenIcon className="w-5 h-5 text-green-600 hover:text-green-800 mx-auto" />
+                                        }
+                                     </button>
+                                     Nota
+                                </th>
+                                <th className="p-1 border text-center">
+                                    <button onClick={() => toggleColumnLock(act.id, 'isLockedRec1')} className="focus:outline-none">
+                                        {(sortedStudents.length > 0 && (instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedRec1) ? 
+                                            <LockClosedIcon className="w-5 h-5 text-red-600 hover:text-red-800 mx-auto" /> : 
+                                            <LockOpenIcon className="w-5 h-5 text-green-600 hover:text-green-800 mx-auto" />
+                                        }
+                                     </button>
+                                     Rec 1
+                                </th>
+                                <th className="p-1 border text-center">
+                                    <button onClick={() => toggleColumnLock(act.id, 'isLockedRec2')} className="focus:outline-none">
+                                        {(sortedStudents.length > 0 && (instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedRec2) ? 
+                                            <LockClosedIcon className="w-5 h-5 text-red-600 hover:text-red-800 mx-auto" /> : 
+                                            <LockOpenIcon className="w-5 h-5 text-green-600 hover:text-green-800 mx-auto" />
+                                        }
+                                     </button>
+                                     Rec 2
+                                </th>
+                                <th className="p-1 border text-center">Final</th>
+                            </React.Fragment>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {sortedStudents.map((student, index) => (
+                        <tr 
+                            key={student.id}
+                            onClick={() => setSelectedStudentId(student.id)}
+                            className={`group cursor-pointer ${index % 2 !== 0 ? 'bg-blue-50' : 'bg-green-50'} hover:bg-orange-100 ${selectedStudentId === student.id ? 'bg-orange-200' : ''}`}
+                        >
+                            <td className={`p-2 border text-left font-medium text-gray-800 w-48 sticky left-0 group-hover:bg-orange-100 ${index % 2 !== 0 ? 'bg-blue-50' : 'bg-green-50'} ${selectedStudentId === student.id ? 'bg-orange-200' : ''}`}>
+                                {`${student.apellido1} ${student.apellido2}, ${student.nombre}`}
+                            </td>
+                            {instrument.activities.map(act => {
+                                const grades = instrumentGrades[student.id]?.[act.id];
+                                const activityGrade: ActivityGrade = typeof grades === 'object' && grades !== null && 'normal' in grades ? grades : { normal: typeof grades === 'number' ? grades : null, rec1: null, rec2: null, isLockedNormal: false, isLockedRec1: false, isLockedRec2: false };
+                                
+                                let calculatedGrade: number | null = null;
+                                if (isCalculatedInstrument) {
+                                    const period = act.trimester as 't1' | 't2' | 't3' | 'rec';
+                                    const calc = calculatedStudentGrades[student.id];
+                                    if (calc) {
+                                        if (instrument.nombre.toLowerCase().includes('servicio')) {
+                                            calculatedGrade = calc.serviceAverages[period as 't1' | 't2' | 't3'] ?? null;
+                                        } else if (instrument.nombre.toLowerCase().includes('práctico') || instrument.nombre.toLowerCase().includes('practico')) {
+                                            calculatedGrade = calc.practicalExams[period] ?? null;
+                                        }
+                                    }
+                                }
+
+                                const finalGrade = isCalculatedInstrument ? (calculatedGrade ?? 0) : Math.max(activityGrade.normal ?? 0, activityGrade.rec1 ?? 0, activityGrade.rec2 ?? 0);
+
+                                return (
+                                    <React.Fragment key={act.id}>
+                                        <td className="p-1 border text-center">
+                                            {isCalculatedInstrument ? (
+                                                <span className="font-semibold text-blue-700">{calculatedGrade !== null ? calculatedGrade.toFixed(2) : '-'}</span>
+                                            ) : (
+                                                <input type="number" 
+                                                       value={activityGrade.normal ?? ''} 
+                                                       onChange={e => handleGradeChange(student.id, act.id, 'normal', e.target.value)} 
+                                                       onPaste={e => handlePasteColumn(e, index, act.id, 'normal')}
+                                                       className="w-12 p-1 border rounded text-center"
+                                                       disabled={activityGrade.isLockedNormal}
+                                                />
+                                            )}
+                                        </td>
+                                        <td className="p-1 border text-center">
+                                            {!isCalculatedInstrument && (
+                                                <input type="number" value={activityGrade.rec1 ?? ''} onChange={e => handleGradeChange(student.id, act.id, 'rec1', e.target.value)} onPaste={e => handlePasteColumn(e, index, act.id, 'rec1')} className="w-12 p-1 border rounded text-center" disabled={activityGrade.isLockedRec1}/>
+                                            )}
+                                        </td>
+                                        <td className="p-1 border text-center">
+                                            {!isCalculatedInstrument && (
+                                                <input type="number" value={activityGrade.rec2 ?? ''} onChange={e => handleGradeChange(student.id, act.id, 'rec2', e.target.value)} onPaste={e => handlePasteColumn(e, index, act.id, 'rec2')} className="w-12 p-1 border rounded text-center" disabled={activityGrade.isLockedRec2}/>
+                                            )}
+                                        </td>
+                                        <td className="p-2 border text-center font-bold">{(isCalculatedInstrument ? (calculatedGrade !== null) : (finalGrade > 0)) ? finalGrade.toFixed(2) : '-'}</td>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+interface InstrumentosViewProps {
+    module: 'pc' | 'optativa' | 'proyecto';
+}
+
+const InstrumentosView: React.FC<InstrumentosViewProps> = ({ module }) => {
+    const context = useAppContext();
+    const { addToast } = context;
+    
+    const [
+        instrumentosEvaluacion, 
+        setInstrumentosEvaluacion,
+        handleDeleteInstrumento
+    ] = useMemo(() => {
+        if (module === 'optativa') return [
+            context.optativaInstrumentosEvaluacion, context.setOptativaInstrumentosEvaluacion, context.handleDeleteOptativaInstrumento
+        ];
+        if (module === 'proyecto') return [
+            context.proyectoInstrumentosEvaluacion, context.setProyectoInstrumentosEvaluacion, context.handleDeleteProyectoInstrumento
+        ];
+        return [ // default PC
+            context.pcInstrumentosEvaluacion, context.setPcInstrumentosEvaluacion, context.handleDeletePCInstrumento
+        ];
+    }, [module, context]);
+    
+    const [localInstrumentos, setLocalInstrumentos] = useState(instrumentosEvaluacion);
+    const [expandedInstrument, setExpandedInstrument] = useState<string | null>(null);
+    const [modalState, setModalState] = useState<{ isOpen: boolean; data: InstrumentoEvaluacion | null }>({ isOpen: false, data: null });
+
+    useEffect(() => {
+        setLocalInstrumentos(instrumentosEvaluacion);
+    }, [instrumentosEvaluacion]);
+
+    const handleOpenModal = (data: InstrumentoEvaluacion | null) => {
+        setModalState({ isOpen: true, data: data || { id: `inst_${Date.now()}`, nombre: '', descripcion: '', pesoTotal: 0, activities: [] } });
+    };
+
+    const handleCloseModal = () => setModalState({ isOpen: false, data: null });
+
+    const handleSaveInstrument = (data: InstrumentoEvaluacion) => {
+        setInstrumentosEvaluacion(prev => ({ ...prev, [data.id]: data }));
+        addToast(`Instrumento '${data.nombre}' guardado.`, 'success');
+        handleCloseModal();
+    };
+    
+    const handleUpdateInstrumentLocally = (updatedInstrument: InstrumentoEvaluacion) => {
+        setLocalInstrumentos(prev => ({
+            ...prev,
+            [updatedInstrument.id]: updatedInstrument,
+        }));
+    };
+    
+    const handleSaveAllPonderaciones = () => {
+        const totalPeso = (Object.values(localInstrumentos) as InstrumentoEvaluacion[]).reduce((sum, inst) => sum + (inst.pesoTotal || 0), 0);
+        if (totalPeso > 100) {
+            addToast(`El peso total no puede superar el 100% (actual: ${totalPeso}%)`, 'error');
+            return;
+        }
+        setInstrumentosEvaluacion(localInstrumentos);
+        addToast('Ponderaciones guardadas con éxito.', 'success');
+    };
+
+    const totalPeso = useMemo(() => (Object.values(localInstrumentos) as InstrumentoEvaluacion[]).reduce((sum, inst) => sum + (inst.pesoTotal || 0), 0), [localInstrumentos]);
+
+    return (
+        <div>
+            <header className="flex justify-between items-center mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800 flex items-center"><PencilIcon className="w-8 h-8 mr-3 text-purple-500"/>Planificación y Ponderación</h1>
+                    <p className="text-gray-500 mt-1">Define el peso de cada instrumento y visualiza las notas asociadas.</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <button onClick={() => handleOpenModal(null)} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition">
+                        <PlusIcon className="w-5 h-5 mr-1" /> Nuevo Instrumento
+                    </button>
+                    <button onClick={handleSaveAllPonderaciones} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition">
+                        <SaveIcon className="w-5 h-5 mr-1" /> Guardar Ponderaciones
+                    </button>
+                </div>
+            </header>
+
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-600 w-1/3">Tipo de Instrumento</th>
+                            <th className="px-4 py-3 text-center font-semibold text-gray-600">Valor Total (%)</th>
+                            <th className="px-4 py-3 text-center font-semibold text-gray-600">Nº Actividades</th>
+                            <th className="px-4 py-3 text-center font-semibold text-gray-600">Acciones</th>
+                        </tr>
+                    </thead>
+                </table>
+                <div className="space-y-1">
+                    {(Object.values(localInstrumentos) as InstrumentoEvaluacion[]).map((inst) => {
+                        const isExpanded = expandedInstrument === inst.id;
+                        return (
+                            <div key={inst.id} className="border-t">
+                                <div className="flex items-center">
+                                    <div className="w-1/3 px-4 py-3 font-medium">
+                                        <button onClick={() => setExpandedInstrument(isExpanded ? null : inst.id)} className="flex items-center gap-2 w-full text-left">
+                                            {isExpanded ? <ChevronDownIcon className="w-4 h-4"/> : <ChevronRightIcon className="w-4 h-4"/>}
+                                            {inst.nombre}
+                                        </button>
+                                    </div>
+                                    <div className="w-1/4 px-4 py-3">
+                                        <input 
+                                            type="number" 
+                                            value={inst.pesoTotal || ''}
+                                            onChange={e => handleUpdateInstrumentLocally({ ...inst, pesoTotal: parseInt(e.target.value) || 0 })}
+                                            className="w-24 mx-auto p-1.5 text-center bg-yellow-50 border rounded-md"
+                                            min="0" max="100"
+                                        />
+                                    </div>
+                                    <div className="w-1/4 px-4 py-3 text-center font-medium">{inst.activities.length}</div>
+                                    <div className="w-1/4 px-4 py-3 text-center">
+                                        <div className="flex justify-center items-center space-x-2">
+                                            <button onClick={() => handleOpenModal(inst)} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full"><PencilIcon className="w-4 h-4" /></button>
+                                            <button onClick={() => handleDeleteInstrumento(inst.id)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-full"><TrashIcon className="w-4 h-4" /></button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {isExpanded && (
+                                    <div className="p-4 bg-gray-50 border-t">
+                                        <h4 className="font-semibold text-md mb-2 text-gray-700">Desglose de Notas del Instrumento: {inst.nombre}</h4>
+                                        <GradesMatrix instrument={inst} />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                 <div className="bg-gray-100 border-t-2 p-3 flex justify-end items-center font-bold">
+                    <span className="mr-4">TOTAL PONDERACIÓN</span>
+                    <span className={`text-lg ${totalPeso > 100 ? 'text-red-600' : totalPeso < 100 ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {totalPeso}%
+                    </span>
+                 </div>
+            </div>
+            {modalState.isOpen && <InstrumentoFormModal isOpen={modalState.isOpen} onClose={handleCloseModal} onSave={handleSaveInstrument} initialData={modalState.data} />}
+        </div>
+    );
+};
+
+export default InstrumentosView;

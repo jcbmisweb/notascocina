@@ -1,0 +1,297 @@
+
+import { StudentAcademicGrades, StudentCalculatedGrades, InstrumentGrades, InstrumentoEvaluacion, StudentFemConfig, PcFemSettings } from '../types';
+import { ACADEMIC_EVALUATION_STRUCTURE } from '../data/constants';
+
+const getNumericValue = (g: any): number | null => {
+    if (g === null || g === undefined) return null;
+    if (typeof g === 'number') return g;
+    if (typeof g === 'object') {
+        const normal = g.normal !== null && g.normal !== undefined ? parseFloat(String(g.normal)) : null;
+        const rec1 = g.rec1 !== null && g.rec1 !== undefined ? parseFloat(String(g.rec1)) : null;
+        const rec2 = g.rec2 !== null && g.rec2 !== undefined ? parseFloat(String(g.rec2)) : null;
+        const validGrades = [normal, rec1, rec2].filter((v): v is number => v !== null && !isNaN(v));
+        return validGrades.length > 0 ? Math.max(...validGrades) : null;
+    }
+    const parsed = parseFloat(String(g));
+    return isNaN(parsed) ? null : parsed;
+};
+
+export const calculateStudentPeriodAverages = (
+    academicGrades: StudentAcademicGrades | undefined,
+    calculatedGrades: StudentCalculatedGrades | undefined,
+    studentId?: string,
+    instrumentGrades?: InstrumentGrades,
+    pcInstrumentosEvaluacion?: Record<string, InstrumentoEvaluacion>
+): Record<string, number | null> => {
+    const results: { [periodKey: string]: number | null } = {};
+
+    if (!calculatedGrades) {
+        ACADEMIC_EVALUATION_STRUCTURE.periods.forEach(period => {
+            results[period.key] = null;
+        });
+        return results;
+    }
+
+    ACADEMIC_EVALUATION_STRUCTURE.periods.forEach(period => {
+        let totalWeight = 0;
+        let weightedSum = 0;
+        let hasAnyGrade = false;
+        
+        period.instruments.forEach(instrument => {
+            let grade: number | null = null;
+            if (instrument.type === 'manual') {
+                if (studentId && instrumentGrades && pcInstrumentosEvaluacion && (instrument.key === 'examen1' || instrument.key === 'examen2')) {
+                    const examInstrument = Object.values(pcInstrumentosEvaluacion).find(inst => 
+                        inst.nombre?.toLowerCase() === 'examen' || inst.id?.toLowerCase() === 'examen'
+                    );
+                    if (examInstrument) {
+                        const activitiesInPeriod = (examInstrument.activities || []).filter(a => a.trimester === period.key);
+                        const activityIndex = instrument.key === 'examen1' ? 0 : 1;
+                        const activity = activitiesInPeriod[activityIndex];
+                        if (activity) {
+                            const g = instrumentGrades[studentId]?.[activity.id];
+                            grade = getNumericValue(g);
+                        }
+                    }
+                }
+                
+                if (grade === null) {
+                    const manualGrade = academicGrades?.[period.key]?.manualGrades?.[instrument.key];
+                    grade = (manualGrade === null || manualGrade === undefined) ? null : parseFloat(String(manualGrade));
+                }
+            } else { // calculated
+                if (instrument.key === 'servicios') {
+                    const periodKey = period.key as 't1' | 't2' | 't3';
+                    grade = calculatedGrades.serviceAverages[periodKey] ?? null;
+                } else {
+                    const examKeyMap: Record<string, keyof StudentCalculatedGrades['practicalExams']> = {
+                        'exPracticoT1': 't1', 'exPracticoT2': 't2', 'exPracticoT3': 't3', 'exPracticoRec': 'rec',
+                    };
+                    const examKey = examKeyMap[instrument.key];
+                    if (examKey) {
+                        grade = calculatedGrades.practicalExams[examKey] ?? null;
+                    }
+                }
+            }
+            if (grade !== null && !isNaN(grade)) {
+                hasAnyGrade = true;
+            }
+            const gradeVal = (grade !== null && !isNaN(grade)) ? grade : 0;
+            weightedSum += gradeVal * instrument.weight;
+            totalWeight += instrument.weight;
+        });
+        results[period.key] = hasAnyGrade ? parseFloat((weightedSum / totalWeight).toFixed(2)) : null;
+    });
+
+    return results;
+};
+
+/**
+ * Calculates grades for modules like 'Optativa' or 'Proyecto' based on instrument grades.
+ * T1 = Average of all activities in t1
+ * T2 = Average of all activities in t2
+ * T3 = Average of all activities in t3
+ * Final = Average of non-null trimester averages
+ */
+export const calculateModularGrades = (
+    studentId: string,
+    instrumentGrades: InstrumentGrades,
+    instrumentosEvaluacion: Record<string, InstrumentoEvaluacion>,
+    calculatedGrades?: StudentCalculatedGrades
+): { t1: number | null, t2: number | null, t3: number | null, final: number | null } => {
+    
+    const grades: { t1: number[], t2: number[], t3: number[] } = { t1: [], t2: [], t3: [] };
+    const studentGrades = instrumentGrades[studentId] || {};
+
+    Object.values(instrumentosEvaluacion).forEach(instrument => {
+        const name = instrument.nombre.toLowerCase();
+        const isServicios = name.includes('servicio');
+        const isPractico = name.includes('práctico') || name.includes('practico');
+        
+        const activities = instrument.activities || [];
+        activities.forEach(activity => {
+            let grade: number | null = null;
+            
+            if ((isServicios || isPractico) && calculatedGrades) {
+                const period = activity.trimester as 't1' | 't2' | 't3';
+                if (isServicios) {
+                    grade = calculatedGrades.serviceAverages[period] ?? null;
+                } else if (isPractico) {
+                    grade = calculatedGrades.practicalExams[period as 't1' | 't2' | 't3' | 'rec'] ?? null;
+                }
+            } else {
+                const rawGrade = studentGrades[activity.id];
+                grade = getNumericValue(rawGrade);
+            }
+
+            if (grade !== null && grade !== undefined && !isNaN(grade)) {
+                if (activity.trimester === 't1') grades.t1.push(grade);
+                else if (activity.trimester === 't2') grades.t2.push(grade);
+                else if (activity.trimester === 't3') grades.t3.push(grade);
+            }
+        });
+    });
+
+    const calculateAverage = (values: number[]) => 
+        values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
+
+    const avgT1 = calculateAverage(grades.t1);
+    const avgT2 = calculateAverage(grades.t2);
+    const avgT3 = calculateAverage(grades.t3);
+    
+    // For Final Grade: Average of the trimester averages that actually have grades
+    const validTrimesterAverages = [avgT1, avgT2, avgT3].filter(g => g !== null) as number[];
+    const finalAvg = validTrimesterAverages.length > 0 
+        ? validTrimesterAverages.reduce((a, b) => a + b, 0) / validTrimesterAverages.length 
+        : null;
+
+    return {
+        t1: avgT1,
+        t2: avgT2,
+        t3: avgT3,
+        final: finalAvg
+    };
+};
+
+export function calculateStudentFemGrade(config: StudentFemConfig | undefined): {
+  isActive: boolean;
+  grade: number | null;
+  label: string;
+} {
+  if (!config) {
+    return { isActive: false, grade: null, label: 'Sin configurar' };
+  }
+  
+  // Check if FCT is marked (either normal FCT or convalidated FCT)
+  if (config.hasFct || (config.isConvalidated && config.convalidatedPart === 'fct')) {
+    const isConvalidatedString = config.isConvalidated && config.convalidatedPart === 'fct'
+      ? `Convalidada FCT (Nota: ${(config.convalidationGrade ?? 5.0).toFixed(1)})`
+      : 'FCT';
+    return {
+      isActive: false,
+      grade: config.isConvalidated && config.convalidatedPart === 'fct' ? (config.convalidationGrade ?? 5.0) : null,
+      label: `${isConvalidatedString} (No modifica nota)`
+    };
+  }
+
+  const getPartGrade = (part: 'fem1' | 'fem2') => {
+    if (config.isConvalidated && config.convalidatedPart === part) {
+      return config.convalidationGrade ?? 5.0;
+    }
+    if (part === 'fem1') return config.hasFem1 ? config.fem1Grade : null;
+    if (part === 'fem2') return config.hasFem2 ? config.fem2Grade : null;
+    return null;
+  };
+
+  const g1 = getPartGrade('fem1');
+  const g2 = getPartGrade('fem2');
+
+  // Case: Both parts active
+  if (g1 !== null && g2 !== null) {
+    return {
+      isActive: true,
+      grade: parseFloat(((g1 + g2) / 2).toFixed(2)),
+      label: `FEM 1 (Nota: ${g1.toFixed(1)}) + FEM 2 (Nota: ${g2.toFixed(1)})`
+    };
+  }
+
+  // Case: Only FEM 2 active
+  if (g2 !== null) {
+    return {
+      isActive: true,
+      grade: g2,
+      label: `FEM 2 (Nota: ${g2.toFixed(1)})`
+    };
+  }
+
+  // Case: Only FEM 1 active (done previous year, does not modify)
+  if (g1 !== null) {
+    return {
+      isActive: false,
+      grade: null,
+      label: `FEM 1 anterior (No modifica)`
+    };
+  }
+
+  // Case: Just general convalidation without specific parts
+  if (config.isConvalidated && !config.convalidatedPart) {
+    return {
+      isActive: true,
+      grade: config.convalidationGrade ?? 5.0,
+      label: `Conconvalidada (Nota: ${(config.convalidationGrade ?? 5.0).toFixed(1)})`
+    };
+  }
+
+  return { isActive: false, grade: null, label: 'Sin FEM' };
+}
+
+export function calculateStudentPcGradeComplete(
+  periodAverages: Record<string, number | null>,
+  femConfig: StudentFemConfig | undefined,
+  settings: PcFemSettings = { pcWeight: 80, femWeight: 20, recEvaluates100Percent: true }
+): {
+  academicGrade: number | null; // Grade of theoretical/practical parts
+  femGrade: number | null;     // Grade of the FCT/FEM part
+  finalGrade: number | null;    // Blended final grade
+  femLabel: string;             // Display description for status
+  isFemActive: boolean;         // Whether FEM has modified the grade
+  isFctActive: boolean;         // Whether FCT has bypassed FEM modification
+  isFailedAcademic: boolean;    // Whether they did not pass academic part (N < 5)
+} {
+  // 1. Calculate base academic grade (ordinary)
+  const validTrimesters = [periodAverages.t1, periodAverages.t2].filter(g => g !== null && !isNaN(g)) as number[];
+  const ordinaryGrade = validTrimesters.length > 0
+    ? parseFloat((validTrimesters.reduce((a, b) => a + b, 0) / validTrimesters.length).toFixed(2))
+    : null;
+
+  // 2. Determine recovery status and academic base
+  const recGrade = periodAverages.rec !== null && !isNaN(periodAverages.rec) ? periodAverages.rec : null;
+  
+  let academicGrade = ordinaryGrade;
+  let isRecApplied = false;
+
+  if (recGrade !== null) {
+    academicGrade = recGrade;
+    isRecApplied = true;
+  }
+
+  const isFailedAcademic = academicGrade === null || academicGrade < 5.0;
+
+  // 3. Calculate FEM grade and details
+  const { isActive: isFemActive, grade: femGrade, label: femLabel } = calculateStudentFemGrade(femConfig);
+  const isFctActive = !!(femConfig?.hasFct || (femConfig?.isConvalidated && femConfig?.convalidatedPart === 'fct'));
+
+  // 4. Calculate blended final grade
+  let finalGrade: number | null = null;
+  if (academicGrade !== null) {
+    if (isFemActive && femGrade !== null) {
+      if (isFailedAcademic) {
+        // "en el caso de que el alumno no supere el modulo de PC, en este caso no acede a la FEM ni FCT, por lo que en su nota aparecera nada no se toma encuenta"
+        finalGrade = academicGrade;
+      } else {
+        // Ordinary pass, so we blend!
+        if (isRecApplied && settings.recEvaluates100Percent) {
+          finalGrade = academicGrade; // REC counts as 100%, ignoring FEM
+        } else {
+          // Normal blending
+          const pWeight = settings.pcWeight ?? 80;
+          const fWeight = settings.femWeight ?? 20;
+          finalGrade = parseFloat(((academicGrade * pWeight / 100) + (femGrade * fWeight / 100)).toFixed(2));
+        }
+      }
+    } else {
+      // FEM not active, final is just raw academic grade
+      finalGrade = academicGrade;
+    }
+  }
+
+  return {
+    academicGrade,
+    femGrade,
+    finalGrade,
+    femLabel,
+    isFemActive,
+    isFctActive,
+    isFailedAcademic
+  };
+}
