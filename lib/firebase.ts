@@ -1,27 +1,23 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+import { getAnalytics } from 'firebase/analytics';
 
-const envConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+const firebaseConfig = {
+  apiKey: "AIzaSyDNAvhPe9XJ8XD1ngqeyEKWAMBBIMyxZL4",
+  authDomain: "notascocina-2e8d7.firebaseapp.com",
+  projectId: "notascocina-2e8d7",
+  storageBucket: "notascocina-2e8d7.firebasestorage.app",
+  messagingSenderId: "1050131307239",
+  appId: "1:1050131307239:web:0b962e95886ef672b2e042",
+  measurementId: "G-XJKN8V0XPG"
 };
 
-const finalConfig = envConfig.apiKey ? envConfig : firebaseConfig;
-
-const app = initializeApp(finalConfig);
-export const db = (finalConfig === firebaseConfig && firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)') 
-    ? getFirestore(app, firebaseConfig.firestoreDatabaseId) 
-    : getFirestore(app);
+const app = initializeApp(firebaseConfig);
+export const analytics = getAnalytics(app);
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-
 
 export const signInWithGoogle = async () => {
     console.log("Llamando a signInWithPopup...");

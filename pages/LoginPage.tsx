@@ -30,7 +30,7 @@ const LoginPage: React.FC = () => {
             if (code === 'auth/popup-blocked') {
                 setErrorMsg("El navegador bloqueó la ventana emergente de inicio de sesión. Por favor, permite las ventanas emergentes o abre la aplicación en una pestaña nueva.");
             } else if (code === 'auth/unauthorized-domain') {
-                 setErrorMsg("Este dominio no está autorizado en las opciones de Firebase Authentication. Recuerda agregar el dominio actual en la consola de Firebase.");
+                 setErrorMsg(`El dominio actual (${window.location.hostname}) no está autorizado en Firebase. Agrégalo en la consola de Firebase (sin espacios ni https://).`);
             } else {
                  setErrorMsg(`Error al iniciar sesión: ${message || 'Error desconocido'}. Asegúrate de haber habilitado Google como proveedor de inicio de sesión en tu consola de Firebase.`);
             }
