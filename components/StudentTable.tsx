@@ -1,5 +1,6 @@
 import React from 'react';
 import { Student } from '../types';
+import { TrashIcon } from './icons';
 
 interface StudentTableProps {
   students: (Student & { 
@@ -7,9 +8,10 @@ interface StudentTableProps {
       courseAverage?: number | null;
   })[];
   onViewStudent: (student: Student) => void;
+  onDeleteStudent: (studentId: string, studentName: string) => void;
 }
 
-const StudentTable: React.FC<StudentTableProps> = ({ students, onViewStudent }) => {
+const StudentTable: React.FC<StudentTableProps> = ({ students, onViewStudent, onDeleteStudent }) => {
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
@@ -50,8 +52,15 @@ const StudentTable: React.FC<StudentTableProps> = ({ students, onViewStudent }) 
                     <td className="px-4 py-3">{studentData.nre}</td>
                     <td className="px-4 py-3">{studentData.grupo}</td>
                     <td className={`px-4 py-3 text-center ${avgColor}`}>{avgText}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap flex items-center space-x-3">
                       <button onClick={() => onViewStudent(studentData)} className="font-medium text-blue-600 hover:underline">Ver Ficha</button>
+                      <button 
+                        onClick={() => onDeleteStudent(studentData.id, fullName)} 
+                        className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition flex items-center"
+                        title="Eliminar alumno"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
                     </td>
                   </tr>
                   <tr className={`${trBg} border-b`}>

@@ -194,3 +194,4 @@ export const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => 
   <Icon {...props}><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" /><path d="m5 3 1.5 4.5L11 9 6.5 10.5 5 15l-1.5-4.5L-1 9l4.5-1.5Z" /><path d="m19 15 1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3Z" /></Icon>
 );
 
+

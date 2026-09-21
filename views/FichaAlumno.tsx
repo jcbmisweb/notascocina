@@ -121,6 +121,7 @@ const CombinedPerformanceChart: React.FC<{
 const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhoto, onUpdateStudent }) => {
   const { 
     students,
+    setStudents,
     teacherData, 
     instituteData,
     pcResultadosAprendizaje, pcCriteriosEvaluacion, pcInstrumentosEvaluacion,
@@ -243,6 +244,16 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setEditedStudent(student) }, [student]);
+
+  const handleDeleteThisStudent = () => {
+      if (window.confirm(`¿Estás seguro de que deseas eliminar al alumno "${fullName}"?`)) {
+          if (window.confirm(`⚠️ ADVERTENCIA: Esta acción eliminará permanentemente al alumno "${fullName}" y todos sus datos asociados. ¿Confirmas la eliminación definitiva?`)) {
+              setStudents(prev => prev.filter(s => s.id !== student.id));
+              addToast(`Alumno "${fullName}" eliminado correctamente.`, 'success');
+              onBack();
+          }
+      }
+  };
 
   const studentEntryExitRecords = useMemo(() => 
     allEntryExitRecords.filter(r => r.studentId === student.id), 
@@ -587,6 +598,9 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
                  <>
                      <ExportButtons onExportPdf={() => handleExport('pdf')} onExportExcel={() => handleExport('excel')} />
                     <button onClick={() => setIsEditing(true)} className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"><PencilIcon className="w-4 h-4 mr-2" />Editar Ficha</button>
+                    <button onClick={handleDeleteThisStudent} className="flex items-center bg-red-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-red-700 transition" title="Eliminar alumno">
+                        <TrashIcon className="w-4 h-4 mr-1.5" /> Eliminar
+                    </button>
                  </>
             )}
             <button onClick={onBack} className="text-gray-600 hover:text-gray-800 font-medium text-2xl leading-none p-1 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100">&times;</button>

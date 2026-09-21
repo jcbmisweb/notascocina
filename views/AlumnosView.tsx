@@ -110,6 +110,18 @@ const AlumnosView: React.FC = () => {
     handleUpdateStudent(updatedStudent);
     setSelectedStudent(updatedStudent);
   };
+
+  const handleDeleteStudent = (studentId: string, studentName: string) => {
+      if (window.confirm(`¿Estás seguro de que deseas eliminar al alumno "${studentName}"?`)) {
+          if (window.confirm(`⚠️ ADVERTENCIA: Esta acción eliminará permanentemente al alumno "${studentName}" y todos sus datos asociados. ¿Confirmas la eliminación definitiva?`)) {
+              setStudents(prev => prev.filter(s => s.id !== studentId));
+              if (selectedStudent?.id === studentId) {
+                  setSelectedStudent(null);
+              }
+              addToast(`Alumno "${studentName}" eliminado correctamente.`, 'success');
+          }
+      }
+  };
   
   if (selectedStudent) {
       return <FichaAlumno 
@@ -172,6 +184,7 @@ const AlumnosView: React.FC = () => {
           <StudentTable 
               students={filteredStudents} 
               onViewStudent={handleViewStudent}
+              onDeleteStudent={handleDeleteStudent}
           />
       )}
       <AddStudentModal 
