@@ -60,20 +60,21 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSa
     const [showAiGuide, setShowAiGuide] = useState(false);
     const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-    const defaultAiPrompt = `Analiza esta captura de pantalla de la ficha del alumno de un centro educativo (tipo InfoEducativa / MurciaEduca) y extrae TODOS los datos disponibles con precisión, tanto si tienen campos completos como si son básicos.
+    const defaultAiPrompt = `Analiza esta captura de pantalla de la ficha del alumno de un centro educativo (tipo InfoEducativa / MurciaEduca) y extrae TODOS los datos disponibles con absoluta precisión.
 Del título o nombre superior (ej. "CHAZARRA VIVO, LAURA"), extrae el apellido1 ("CHAZARRA"), apellido2 ("VIVO") y nombre ("LAURA").
-Extrae también:
+Extrae también con exactitud:
 - NIF/NIE
 - NRE
 - Nº de Expediente
 - Fecha de Nacimiento
 - Nacionalidad
 - Dirección postal completa (Domicilio)
-- Teléfono principal de contacto
-- Email personal o alternativo
+- Teléfono propio / principal
+- Email personal (y alternativos si los hay)
 - Email oficial (@alu.murciaeduca.es)
-- Grupo / Curso / Tutor del centro
-- Datos de los tutores legales (nombre, teléfono y email si aparecen en la sección "Datos de contacto").
+- Grupo y Subgrupo
+- Tutor del centro
+- Datos de contacto (tutores legales): nombre completo, teléfono y correo electrónico de cada tutor que aparezca en la sección inferior de contactos.
 
 Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura exacta:
 {

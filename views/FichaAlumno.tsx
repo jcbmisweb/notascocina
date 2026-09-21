@@ -618,15 +618,58 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
 
         {activeTab === 'general' && (
              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <div className="w-full xl:col-span-2 bg-white shadow-md rounded-lg overflow-hidden">
-                    <div className="p-4 border-b"><h3 className="text-lg font-bold text-gray-800">Datos Personales</h3></div>
-                    <dl className="divide-y divide-gray-200">
-                        <InfoRow label="NRE" value={editedStudent.nre} isEditing={isEditing}><input name="nre" value={editedStudent.nre} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
-                        <InfoRow label="Nº Expediente" value={editedStudent.expediente} isEditing={isEditing}><input name="expediente" value={editedStudent.expediente} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
-                        <InfoRow label="Fecha de Nacimiento" value={editedStudent.fechaNacimiento} isEditing={isEditing}><input name="fechaNacimiento" value={editedStudent.fechaNacimiento} onChange={handleInputChange} className="w-full p-1 border rounded" type="date" /></InfoRow>
-                        <InfoRow label="Teléfono" value={editedStudent.telefono} isEditing={isEditing}><input name="telefono" value={editedStudent.telefono} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
-                        <InfoRow label="Email Personal" value={editedStudent.emailPersonal} isEditing={isEditing}><input name="emailPersonal" value={editedStudent.emailPersonal} onChange={handleInputChange} className="w-full p-1 border rounded" type="email" /></InfoRow>
-                    </dl>
+                <div className="w-full xl:col-span-2 space-y-6">
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-bold text-gray-800">Datos Personales y Académicos</h3>
+                            <span className="text-xs px-2.5 py-1 bg-blue-100 text-blue-800 font-semibold rounded-full">
+                                {editedStudent.grupo || 'Sin grupo'}
+                            </span>
+                        </div>
+                        <dl className="divide-y divide-gray-200">
+                            <InfoRow label="NIF/NIE" value={editedStudent.nifNie} isEditing={isEditing}><input name="nifNie" value={editedStudent.nifNie || ''} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
+                            <InfoRow label="NRE" value={editedStudent.nre} isEditing={isEditing}><input name="nre" value={editedStudent.nre} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
+                            <InfoRow label="Nº Expediente" value={editedStudent.expediente} isEditing={isEditing}><input name="expediente" value={editedStudent.expediente} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
+                            <InfoRow label="Fecha de Nacimiento" value={editedStudent.fechaNacimiento} isEditing={isEditing}><input name="fechaNacimiento" value={editedStudent.fechaNacimiento} onChange={handleInputChange} className="w-full p-1 border rounded" type="date" /></InfoRow>
+                            <InfoRow label="Nacionalidad" value={editedStudent.nacionalidad} isEditing={isEditing}><input name="nacionalidad" value={editedStudent.nacionalidad || ''} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
+                            <InfoRow label="Dirección / Domicilio" value={editedStudent.direccion} isEditing={isEditing}><input name="direccion" value={editedStudent.direccion || ''} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
+                            <InfoRow label="Teléfono Propio" value={editedStudent.telefono} isEditing={isEditing}><input name="telefono" value={editedStudent.telefono} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
+                            <InfoRow label="Email Personal" value={editedStudent.emailPersonal} isEditing={isEditing}><input name="emailPersonal" value={editedStudent.emailPersonal} onChange={handleInputChange} className="w-full p-1 border rounded" type="email" /></InfoRow>
+                            <InfoRow label="Email Oficial" value={editedStudent.emailOficial} isEditing={isEditing}><input name="emailOficial" value={editedStudent.emailOficial} onChange={handleInputChange} className="w-full p-1 border rounded" type="email" /></InfoRow>
+                            <InfoRow label="Grupo" value={editedStudent.grupo} isEditing={isEditing}><input name="grupo" value={editedStudent.grupo} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
+                            <InfoRow label="Tutor del Centro" value={editedStudent.tutorCentro} isEditing={isEditing}><input name="tutorCentro" value={editedStudent.tutorCentro || ''} onChange={handleInputChange} className="w-full p-1 border rounded" /></InfoRow>
+                        </dl>
+                    </div>
+
+                    {/* Datos de contacto / Tutores Legales */}
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden p-6 space-y-4">
+                        <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Datos de contacto (Tutores Legales)</h3>
+                        {editedStudent.tutoresLegales && editedStudent.tutoresLegales.length > 0 ? (
+                            <div className="space-y-4">
+                                {editedStudent.tutoresLegales.map((tutor, idx) => (
+                                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                        <div>
+                                            <p className="font-bold text-gray-800 text-sm">{tutor.nombre}</p>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 mt-1">
+                                                {tutor.telefono && (
+                                                    <span className="flex items-center">
+                                                        📞 {tutor.telefono}
+                                                    </span>
+                                                )}
+                                                {tutor.email && (
+                                                    <span className="flex items-center text-blue-600">
+                                                        ✉️ {tutor.email}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-500 italic">No hay tutores legales o contactos registrados para este alumno.</p>
+                        )}
+                    </div>
                 </div>
                 <div className="w-full xl:col-span-1 space-y-6">
                      <div className="bg-white shadow-md rounded-lg p-4">
