@@ -309,6 +309,27 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+              const blob = items[i].getAsFile();
+              if (blob) {
+                  const reader = new FileReader();
+                  reader.onload = (loadEvent) => {
+                      if (typeof loadEvent.target?.result === 'string') {
+                          onUpdatePhoto(student.id, loadEvent.target.result);
+                          addToast('Foto actualizada mediante captura pegada.', 'success');
+                      }
+                  };
+                  reader.readAsDataURL(blob);
+                  e.preventDefault();
+              }
+          }
+      }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedStudent(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -576,16 +597,24 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
     <div>
       <header className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div className="flex items-center">
-            <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
-                <img className="h-20 w-20 rounded-full object-cover mr-4" src={student.fotoUrl} alt={`Foto de ${fullName}`} />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center transition-opacity duration-300">
-                    <CameraIcon className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div 
+                className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full" 
+                onClick={handlePhotoClick} 
+                onPaste={handlePaste}
+                tabIndex={0}
+                title="Haz clic para subir o haz Ctrl+V para pegar una captura de pantalla de la foto"
+            >
+                <img className="h-20 w-20 rounded-full object-cover mr-4 border-2 border-gray-200 group-hover:border-blue-500 transition-colors" src={student.fotoUrl} alt={`Foto de ${fullName}`} />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex flex-col items-center justify-center transition-opacity duration-300">
+                    <CameraIcon className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-[9px] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">Pegar / Subir</span>
                 </div>
             </div>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
             <div>
                 <h1 className="text-4xl font-bold text-gray-800">{fullName}</h1>
                 <p className="text-gray-500 text-lg">{student.grupo} | {student.emailOficial}</p>
+                <p className="text-xs text-indigo-600 mt-0.5 font-medium">💡 Tip: Haz clic en la foto o presiona Ctrl+V para pegar una captura de pantalla directa.</p>
             </div>
         </div>
         <div className="flex items-center space-x-2">
