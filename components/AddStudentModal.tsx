@@ -47,6 +47,11 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSa
         telefono: '',
         emailPersonal: '',
         emailOficial: '',
+        nifNie: '',
+        nacionalidad: '',
+        direccion: '',
+        tutorCentro: '',
+        tutoresLegales: [] as { nombre: string; telefono?: string; email?: string; }[],
     });
     
     const [jsonInput, setJsonInput] = useState('');
@@ -55,22 +60,41 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSa
     const [showAiGuide, setShowAiGuide] = useState(false);
     const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-    const defaultAiPrompt = `Analiza esta captura de pantalla de la ficha del alumno de un centro educativo (tipo InfoEducativa / MurciaEduca) y extrae todos los datos personales y académicos con precisión.
+    const defaultAiPrompt = `Analiza esta captura de pantalla de la ficha del alumno de un centro educativo (tipo InfoEducativa / MurciaEduca) y extrae TODOS los datos disponibles con precisión, tanto si tienen campos completos como si son básicos.
 Del título o nombre superior (ej. "CHAZARRA VIVO, LAURA"), extrae el apellido1 ("CHAZARRA"), apellido2 ("VIVO") y nombre ("LAURA").
-Extrae también NRE, Nº de expediente, fecha de nacimiento, teléfono, email personal o alternativo y email oficial (@alu.murciaeduca.es), así como el grupo o curso.
-Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura exacta (sin markdown adicional si es posible):
+Extrae también:
+- NIF/NIE
+- NRE
+- Nº de Expediente
+- Fecha de Nacimiento
+- Nacionalidad
+- Dirección postal completa (Domicilio)
+- Teléfono principal de contacto
+- Email personal o alternativo
+- Email oficial (@alu.murciaeduca.es)
+- Grupo / Curso / Tutor del centro
+- Datos de los tutores legales (nombre, teléfono y email si aparecen en la sección "Datos de contacto").
+
+Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura exacta:
 {
   "nombre": "",
   "apellido1": "",
   "apellido2": "",
   "nre": "",
   "expediente": "",
+  "nifNie": "",
+  "nacionalidad": "",
+  "direccion": "",
   "grupo": "",
   "subgrupo": "",
   "fechaNacimiento": "",
   "telefono": "",
   "emailPersonal": "",
-  "emailOficial": ""
+  "emailOficial": "",
+  "tutorCentro": "",
+  "tutoresLegales": [
+    { "nombre": "", "telefono": "", "email": "" }
+  ]
 }`;
 
     if (!isOpen) return null;
@@ -109,8 +133,13 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura exact
                 telefono: parsed.telefono || prev.telefono,
                 emailPersonal: parsed.emailPersonal || prev.emailPersonal,
                 emailOficial: parsed.emailOficial || prev.emailOficial,
+                nifNie: parsed.nifNie || prev.nifNie,
+                nacionalidad: parsed.nacionalidad || prev.nacionalidad,
+                direccion: parsed.direccion || prev.direccion,
+                tutorCentro: parsed.tutorCentro || prev.tutorCentro,
+                tutoresLegales: parsed.tutoresLegales || prev.tutoresLegales,
             }));
-            setJsonSuccessMsg('¡Datos JSON aplicados con éxito al formulario!');
+            setJsonSuccessMsg('¡Datos completos extraídos y aplicados con éxito!');
             setJsonInput('');
         } catch (e: any) {
             setJsonError('El texto introducido no es un JSON válido. Asegúrate de copiar el resultado completo devuelto por la IA.');
@@ -128,7 +157,8 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura exact
         setFormData({
             nre: '', expediente: '', nombre: '', apellido1: '', apellido2: '',
             grupo: '', subgrupo: '', fechaNacimiento: '', telefono: '',
-            emailPersonal: '', emailOficial: '',
+            emailPersonal: '', emailOficial: '', nifNie: '', nacionalidad: '',
+            direccion: '', tutorCentro: '', tutoresLegales: [],
         });
         setJsonSuccessMsg(null);
         setJsonError(null);
@@ -222,10 +252,14 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura exact
                         <InputField label="Nombre" name="nombre" value={formData.nombre} onChange={handleChange} required />
                         <InputField label="Primer Apellido" name="apellido1" value={formData.apellido1} onChange={handleChange} required />
                         <InputField label="Segundo Apellido" name="apellido2" value={formData.apellido2} onChange={handleChange} />
+                        <InputField label="NIF/NIE" name="nifNie" value={formData.nifNie} onChange={handleChange} />
                         <InputField label="NRE" name="nre" value={formData.nre} onChange={handleChange} required />
                         <InputField label="Nº Expediente" name="expediente" value={formData.expediente} onChange={handleChange} />
+                        <InputField label="Nacionalidad" name="nacionalidad" value={formData.nacionalidad} onChange={handleChange} />
+                        <InputField label="Dirección / Domicilio" name="direccion" value={formData.direccion} onChange={handleChange} />
                         <InputField label="Grupo" name="grupo" value={formData.grupo} onChange={handleChange} />
                         <InputField label="Subgrupo" name="subgrupo" value={formData.subgrupo} onChange={handleChange} />
+                        <InputField label="Tutor del Centro" name="tutorCentro" value={formData.tutorCentro} onChange={handleChange} />
                         <InputField label="Fecha de Nacimiento" name="fechaNacimiento" value={formData.fechaNacimiento} onChange={handleChange} type="date" />
                         <InputField label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange} />
                         <InputField label="Email Personal" name="emailPersonal" value={formData.emailPersonal} onChange={handleChange} type="email" />

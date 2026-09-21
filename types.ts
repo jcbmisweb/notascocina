@@ -15,6 +15,15 @@ export interface Student {
   emailPersonal: string;
   emailOficial: string;
   fotoUrl: string;
+  nifNie?: string;
+  nacionalidad?: string;
+  direccion?: string;
+  tutorCentro?: string;
+  tutoresLegales?: {
+    nombre: string;
+    telefono?: string;
+    email?: string;
+  }[];
 }
 
 export interface PracticeGroup {
