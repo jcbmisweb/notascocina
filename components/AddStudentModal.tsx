@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Student } from '../types';
-import { XIcon, SaveIcon } from './icons';
+import { XIcon, SaveIcon, SparklesIcon } from './icons';
 
 interface AddStudentModalProps {
     isOpen: boolean;
@@ -48,12 +48,73 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSa
         emailPersonal: '',
         emailOficial: '',
     });
+    
+    const [jsonInput, setJsonInput] = useState('');
+    const [jsonError, setJsonError] = useState<string | null>(null);
+    const [jsonSuccessMsg, setJsonSuccessMsg] = useState<string | null>(null);
+    const [showAiGuide, setShowAiGuide] = useState(false);
+    const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+    const defaultAiPrompt = `Analiza esta captura de pantalla de la ficha del alumno de un centro educativo (tipo InfoEducativa / MurciaEduca) y extrae todos los datos personales y académicos con precisión.
+Del título o nombre superior (ej. "CHAZARRA VIVO, LAURA"), extrae el apellido1 ("CHAZARRA"), apellido2 ("VIVO") y nombre ("LAURA").
+Extrae también NRE, Nº de expediente, fecha de nacimiento, teléfono, email personal o alternativo y email oficial (@alu.murciaeduca.es), así como el grupo o curso.
+Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura exacta (sin markdown adicional si es posible):
+{
+  "nombre": "",
+  "apellido1": "",
+  "apellido2": "",
+  "nre": "",
+  "expediente": "",
+  "grupo": "",
+  "subgrupo": "",
+  "fechaNacimiento": "",
+  "telefono": "",
+  "emailPersonal": "",
+  "emailOficial": ""
+}`;
 
     if (!isOpen) return null;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleCopyPrompt = () => {
+        navigator.clipboard.writeText(defaultAiPrompt);
+        setCopiedPrompt(true);
+        setTimeout(() => setCopiedPrompt(false), 3000);
+    };
+
+    const handleApplyJson = () => {
+        setJsonError(null);
+        setJsonSuccessMsg(null);
+        try {
+            let cleanJson = jsonInput.trim();
+            if (cleanJson.startsWith('```')) {
+                cleanJson = cleanJson.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+            }
+
+            const parsed = JSON.parse(cleanJson);
+            setFormData(prev => ({
+                ...prev,
+                nombre: parsed.nombre || prev.nombre,
+                apellido1: parsed.apellido1 || prev.apellido1,
+                apellido2: parsed.apellido2 || prev.apellido2,
+                nre: parsed.nre || prev.nre,
+                expediente: parsed.expediente || prev.expediente,
+                grupo: parsed.grupo || prev.grupo,
+                subgrupo: parsed.subgrupo || prev.subgrupo,
+                fechaNacimiento: parsed.fechaNacimiento || prev.fechaNacimiento,
+                telefono: parsed.telefono || prev.telefono,
+                emailPersonal: parsed.emailPersonal || prev.emailPersonal,
+                emailOficial: parsed.emailOficial || prev.emailOficial,
+            }));
+            setJsonSuccessMsg('¡Datos JSON aplicados con éxito al formulario!');
+            setJsonInput('');
+        } catch (e: any) {
+            setJsonError('El texto introducido no es un JSON válido. Asegúrate de copiar el resultado completo devuelto por la IA.');
+        }
     };
 
     const handleSubmit = (e?: React.FormEvent) => {
@@ -64,23 +125,98 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSa
         }
         onSave(formData);
         onClose();
-        // Reset form for next time
         setFormData({
             nre: '', expediente: '', nombre: '', apellido1: '', apellido2: '',
             grupo: '', subgrupo: '', fechaNacimiento: '', telefono: '',
             emailPersonal: '', emailOficial: '',
         });
+        setJsonSuccessMsg(null);
+        setJsonError(null);
+        setJsonInput('');
     };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="add-student-title" onClick={onClose}>
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4 pb-4 border-b">
-                    <h3 id="add-student-title" className="text-xl font-bold text-gray-800">Añadir Nuevo Alumno</h3>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200">
-                        <XIcon className="w-6 h-6 text-gray-600" />
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4 pb-3 border-b">
+                    <div className="flex items-center space-x-2">
+                        <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg">
+                            <SparklesIcon className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 id="add-student-title" className="text-xl font-bold text-gray-800">Añadir Nuevo Alumno</h3>
+                            <p className="text-xs text-gray-500">Introduce los datos manualmente o usa el puente de IA por JSON</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition">
+                        <XIcon className="w-6 h-6" />
                     </button>
                 </div>
+
+                {/* AI Prompt Bridge Toggle / Section */}
+                <div className="mb-4 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <SparklesIcon className="w-5 h-5 text-indigo-600" />
+                            <h4 className="text-sm font-semibold text-indigo-900">Puente de IA Externo (Prompt + JSON)</h4>
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={() => setShowAiGuide(!showAiGuide)} 
+                            className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium transition"
+                        >
+                            {showAiGuide ? 'Ocultar Asistente IA' : '✨ Usar con IA Externa'}
+                        </button>
+                    </div>
+
+                    {showAiGuide && (
+                        <div className="mt-3 pt-3 border-t border-indigo-200 space-y-3 text-xs text-gray-700">
+                            <p>1. Copia este <strong>Prompt</strong> y pégalo en tu IA favorita junto con la captura de pantalla del alumno:</p>
+                            <div className="relative bg-white p-2.5 rounded border border-indigo-100 font-mono text-[11px] max-h-24 overflow-y-auto">
+                                {defaultAiPrompt}
+                            </div>
+                            <div className="flex justify-end">
+                                <button 
+                                    type="button" 
+                                    onClick={handleCopyPrompt} 
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-semibold shadow transition"
+                                >
+                                    {copiedPrompt ? '¡Prompt Copiado!' : '📋 Copiar Prompt al Portapapeles'}
+                                </button>
+                            </div>
+
+                            <p className="pt-2">2. Pega el <strong>JSON</strong> que te devuelva la IA aquí abajo y pulsa "Aplicar JSON":</p>
+                            <div className="flex gap-2">
+                                <textarea
+                                    value={jsonInput}
+                                    onChange={(e) => setJsonInput(e.target.value)}
+                                    placeholder='Pega aquí el JSON {"nombre": "...", ...}'
+                                    className="flex-1 p-2 bg-white border border-gray-300 rounded text-xs font-mono h-16 focus:ring-1 focus:ring-indigo-500"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleApplyJson}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-xs font-semibold shadow transition self-end"
+                                >
+                                    Aplicar JSON
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {jsonSuccessMsg && (
+                    <div className="mb-3 p-2.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium border border-green-200">
+                        {jsonSuccessMsg}
+                    </div>
+                )}
+
+                {jsonError && (
+                    <div className="mb-3 p-2.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium border border-red-200">
+                        {jsonError}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputField label="Nombre" name="nombre" value={formData.nombre} onChange={handleChange} required />
@@ -96,12 +232,13 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSa
                         <InputField label="Email Oficial" name="emailOficial" value={formData.emailOficial} onChange={handleChange} type="email" />
                     </div>
                 </form>
-                <div className="flex justify-end space-x-2 pt-4 border-t mt-4">
-                    <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">
+
+                <div className="flex justify-end space-x-3 pt-4 border-t mt-4">
+                    <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold text-sm transition">
                         Cancelar
                     </button>
-                    <button type="button" onClick={() => handleSubmit()} className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center">
-                        <SaveIcon className="w-5 h-5 mr-2" />
+                    <button type="button" onClick={() => handleSubmit()} className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm shadow transition flex items-center">
+                        <SaveIcon className="w-5 h-5 mr-1.5" />
                         Guardar Alumno
                     </button>
                 </div>
@@ -111,3 +248,4 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onSa
 };
 
 export default AddStudentModal;
+
