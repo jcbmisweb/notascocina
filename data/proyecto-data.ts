@@ -87,7 +87,27 @@ export const proyectoUnidadesTrabajo: Record<string, UnidadTrabajo> = {
 };
 
 export const proyectoInstrumentosEvaluacion: Record<string, InstrumentoEvaluacion> = {
-  "proy_inst1": { id: "proy_inst1", nombre: "Memoria del Proyecto", descripcion: "Documento escrito final", activities: [{ id: "act_proy_1", name: "Entrega Memoria", trimester: "t3" }, { id: "act_proy_2", name: "Anexos y Planificación", trimester: "t3" }] },
-  "proy_inst2": { id: "proy_inst2", nombre: "Presentación y Defensa", descripcion: "Exposición oral ante tribunal", activities: [{ id: "act_proy_4", name: "Defensa Oral", trimester: "t3" }] },
-  "proy_inst3": { id: "proy_inst3", nombre: "Seguimiento", descripcion: "Evaluación continua del tutor", activities: [{ id: "act_proy_3", name: "Control de Seguimiento", trimester: "t3" }] }
+  "proy_fase_inicial": { 
+      id: "proy_fase_inicial", 
+      nombre: "Fase Inicial y Seguimiento (6.0 pts / 60%)", 
+      descripcion: "Memoria base, retos grupales e individuales de seguimiento", 
+      activities: [
+          { id: "proy_reto_1", name: "Reto 1: Estructura, roles y concepto (Grupal - 0.5p)", trimester: "t3" },
+          { id: "proy_reto_2_g", name: "Reto 2G: Elección concepto y entorno Murcia (Grupal - 0.5p)", trimester: "t3" },
+          { id: "proy_reto_2_i", name: "Reto 2I: Análisis tendencias, ODS, PRL y cartas (Individual - 1.0p)", trimester: "t3" },
+          { id: "proy_reto_3_i", name: "Reto 3I: Fichas técnicas normalizadas platos (Individual - 2.0p)", trimester: "t3" },
+          { id: "proy_reto_3_g", name: "Reto 3G: Diseño Carta Sostenible y maquetación (Grupal - 0.5p)", trimester: "t3" },
+          { id: "proy_reto_4_g", name: "Reto 4G: Dossier proyecto / Memoria parcial (Grupal - 0.5p)", trimester: "t3" },
+          { id: "proy_reto_5", name: "Reto 5: Escandallos, costes y rentabilidad (Ind/Grupal - 1.0p)", trimester: "t3" }
+      ] 
+  },
+  "proy_fase_final": { 
+      id: "proy_fase_final", 
+      nombre: "Fase Final y Exposición (4.0 pts / 40%)", 
+      descripcion: "Coevaluación diabólica y exposición oral ante tribunal", 
+      activities: [
+          { id: "proy_reto_6_coeval", name: "Reto 6: Coevaluación Diabólica / Compañeros (Ind - 1.0p)", trimester: "t3" },
+          { id: "proy_reto_6_defensa", name: "Reto 6: Exposición Oral y Defensa ante tribunal (Individual - 3.0p)", trimester: "t3" }
+      ] 
+  }
 };
