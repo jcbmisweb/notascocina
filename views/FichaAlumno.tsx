@@ -303,7 +303,36 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
     if (file) {
       const reader = new FileReader();
       reader.onload = (loadEvent) => {
-        if (typeof loadEvent.target?.result === 'string') onUpdatePhoto(student.id, loadEvent.target.result);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 150;
+          const MAX_HEIGHT = 150;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          onUpdatePhoto(student.id, dataUrl);
+        };
+        if (typeof loadEvent.target?.result === 'string') {
+          img.src = loadEvent.target.result;
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -319,8 +348,35 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
                   const reader = new FileReader();
                   reader.onload = (loadEvent) => {
                       if (typeof loadEvent.target?.result === 'string') {
-                          onUpdatePhoto(student.id, loadEvent.target.result);
-                          addToast('Foto actualizada mediante captura pegada.', 'success');
+                          const img = new Image();
+                          img.onload = () => {
+                              const canvas = document.createElement('canvas');
+                              const MAX_WIDTH = 150;
+                              const MAX_HEIGHT = 150;
+                              let width = img.width;
+                              let height = img.height;
+
+                              if (width > height) {
+                                  if (width > MAX_WIDTH) {
+                                      height *= MAX_WIDTH / width;
+                                      width = MAX_WIDTH;
+                                  }
+                              } else {
+                                  if (height > MAX_HEIGHT) {
+                                      width *= MAX_HEIGHT / height;
+                                      height = MAX_HEIGHT;
+                                  }
+                              }
+
+                              canvas.width = width;
+                              canvas.height = height;
+                              const ctx = canvas.getContext('2d');
+                              ctx?.drawImage(img, 0, 0, width, height);
+                              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                              onUpdatePhoto(student.id, dataUrl);
+                              addToast('Foto actualizada y optimizada mediante captura pegada.', 'success');
+                          };
+                          img.src = loadEvent.target.result;
                       }
                   };
                   reader.readAsDataURL(blob);
