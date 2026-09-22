@@ -33,6 +33,13 @@ export interface PracticeGroup {
   studentIds: string[];
 }
 
+export interface ProyectoGroup {
+  id: string;
+  name: string;
+  color: string;
+  studentIds: string[];
+}
+
 export interface ServiceRole {
     id: string;
     name: string;

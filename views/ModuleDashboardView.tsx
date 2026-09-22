@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import StatCard from '../components/StatCard';
 import ActionCard from '../components/ActionCard';
-import { FileTextIcon, BookOpenIcon, PencilIcon, ClipboardListIcon, RotateCcwIcon } from '../components/icons';
+import { FileTextIcon, BookOpenIcon, PencilIcon, ClipboardListIcon, RotateCcwIcon, UsersIcon } from '../components/icons';
 
 interface ModuleDashboardViewProps {
     module: 'pc' | 'optativa' | 'proyecto';
@@ -98,6 +98,12 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                     <ActionCard icon={FileTextIcon} title="Gestionar RAs y Criterios" description="Define los resultados de aprendizaje" onClick={() => onNavigate(`${module}-ra`)} color="#8b5cf6" />
                     <ActionCard icon={BookOpenIcon} title="Gestionar Unidades de Trabajo" description="Organiza las unidades didácticas" onClick={() => onNavigate(`${module}-ut`)} color="#10b981" />
                     <ActionCard icon={PencilIcon} title="Gestionar Instrumentos" description="Configura los instrumentos de evaluación" onClick={() => onNavigate(`${module}-instrumentos`)} color="#f59e0b" />
+                    {module === 'proyecto' && (
+                        <>
+                            <ActionCard icon={UsersIcon} title="Definir Grupos de Proyecto" description="Crea restaurantes y equipos independientes de cocina" onClick={() => onNavigate('proyecto-grupos')} color="#7c3aed" />
+                            <ActionCard icon={UsersIcon} title="Coevaluación Diabólica" description="Gestión de valoraciones cruzadas entre alumnos" onClick={() => onNavigate('proyecto-coevaluacion')} color="#dc2626" />
+                        </>
+                    )}
                 </div>
             </div>
 

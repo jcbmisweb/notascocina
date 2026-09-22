@@ -254,6 +254,8 @@ interface AppContextType {
     setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
     practiceGroups: PracticeGroup[];
     setPracticeGroups: React.Dispatch<React.SetStateAction<PracticeGroup[]>>;
+    proyectoGroups: ProyectoGroup[];
+    setProyectoGroups: React.Dispatch<React.SetStateAction<ProyectoGroup[]>>;
     services: Service[];
     setServices: React.Dispatch<React.SetStateAction<Service[]>>;
     serviceEvaluations: ServiceEvaluation[];
@@ -394,6 +396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Basic Data States with Sync
     const [students, setStudents, setStudentsRaw] = useSyncedState<Student[]>('students', [], user, setSyncStatus);
     const [practiceGroups, setPracticeGroups, setPracticeGroupsRaw] = useSyncedState<PracticeGroup[]>('practiceGroups', [], user, setSyncStatus);
+    const [proyectoGroups, setProyectoGroups, setProyectoGroupsRaw] = useSyncedState<ProyectoGroup[]>('proyectoGroups', [], user, setSyncStatus);
     const [services, setServices, setServicesRaw] = useSyncedState<Service[]>('services', [], user, setSyncStatus);
     const [serviceEvaluations, setServiceEvaluations, setServiceEvaluationsRaw] = useSyncedState<ServiceEvaluation[]>('serviceEvaluations', [], user, setSyncStatus);
     const [serviceRoles, setServiceRoles, setServiceRolesRaw] = useSyncedState<ServiceRole[]>('serviceRoles', [
@@ -1142,7 +1145,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const value: AppContextType = {
-        students, setStudents, practiceGroups, setPracticeGroups, services, setServices, serviceEvaluations, setServiceEvaluations, serviceRoles, setServiceRoles, entryExitRecords, setEntryExitRecords, academicGrades, setAcademicGrades, instrumentGrades, setInstrumentGrades, courseGrades, setCourseGrades, practicalExamEvaluations, setPracticalExamEvaluations, teacherData, setTeacherData, instituteData, setInstituteData, trimesterDates, setTrimesterDates,
+        students, setStudents, practiceGroups, setPracticeGroups, proyectoGroups, setProyectoGroups, services, setServices, serviceEvaluations, setServiceEvaluations, serviceRoles, setServiceRoles, entryExitRecords, setEntryExitRecords, academicGrades, setAcademicGrades, instrumentGrades, setInstrumentGrades, courseGrades, setCourseGrades, practicalExamEvaluations, setPracticalExamEvaluations, teacherData, setTeacherData, instituteData, setInstituteData, trimesterDates, setTrimesterDates,
         femConfigs, setFemConfigs, pcFemSettings, setPcFemSettings,
         
         pcResultadosAprendizaje, setPcResultadosAprendizaje, pcCriteriosEvaluacion, setPcCriteriosEvaluacion, pcInstrumentosEvaluacion, setPcInstrumentosEvaluacion, pcUnidadesTrabajo, setPcUnidadesTrabajo,

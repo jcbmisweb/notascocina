@@ -21,6 +21,8 @@ const UTView = lazy(() => import('./views/UTView'));
 const InstrumentosView = lazy(() => import('./views/InstrumentosView'));
 const ModuleDashboardView = lazy(() => import('./views/ModuleDashboardView'));
 const ExamSchedulerView = lazy(() => import('./views/ExamSchedulerView'));
+const CoevaluacionDiabolicaView = lazy(() => import('./views/CoevaluacionDiabolicaView'));
+const DefinirGruposProyectoView = lazy(() => import('./views/DefinirGruposProyectoView'));
 
 
 const AppContent: React.FC = () => {
@@ -103,6 +105,10 @@ const AppContent: React.FC = () => {
                 return <UTView module="proyecto" />;
             case 'proyecto-instrumentos':
                 return <InstrumentosView module="proyecto" />;
+            case 'proyecto-grupos':
+                return <DefinirGruposProyectoView />;
+            case 'proyecto-coevaluacion':
+                return <CoevaluacionDiabolicaView />;
 
             case 'gestion-app':
                 return <GestionAppView />;
