@@ -500,19 +500,19 @@ const GestionAcademicaView: React.FC = () => {
 
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
         {activeTab === 'principal' && (
-            <div className="overflow-x-auto">
+            <div className="max-h-[75vh] overflow-y-auto overflow-x-auto relative">
                 <table className="min-w-full text-xs text-center border-collapse">
-                    <thead className="bg-gray-100 sticky top-0 z-10">
+                    <thead className="bg-gray-100 sticky top-0 z-20 shadow-sm">
                         <tr>
-                            <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 bg-gray-100" rowSpan={2}>Alumno</th>
-                            {ACADEMIC_EVALUATION_STRUCTURE.periods.map(period => (<th key={period.key} className="p-2 border font-semibold text-gray-600" colSpan={period.instruments.length + 1}>{period.name}</th>))}
+                            <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 z-30 bg-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={2}>Alumno</th>
+                            {ACADEMIC_EVALUATION_STRUCTURE.periods.map(period => (<th key={period.key} className="p-2 border font-semibold text-gray-600 bg-gray-100" colSpan={period.instruments.length + 1}>{period.name}</th>))}
                             <th className="p-2 border font-semibold text-gray-600 bg-amber-50" rowSpan={2}>Media PC (Teo/Prac)</th>
                             <th className="p-2 border font-semibold text-gray-600 bg-stone-50" rowSpan={2}>+ Prácticas (FEM)</th>
                             <th className="p-2 border font-bold text-gray-800 bg-emerald-100" rowSpan={2}>NOTA FINAL MÓDULO</th>
                         </tr>
                         <tr>
                             {ACADEMIC_EVALUATION_STRUCTURE.periods.flatMap(period => [
-                                ...period.instruments.map(instrument => (<th key={`${period.key}-${instrument.key}`} className={`p-2 border font-semibold text-gray-500 text-[10px]`}>{instrument.name} ({instrument.weight * 100}%)</th>)),
+                                ...period.instruments.map(instrument => (<th key={`${period.key}-${instrument.key}`} className={`p-2 border font-semibold text-gray-500 text-[10px] bg-gray-100`}>{instrument.name} ({instrument.weight * 100}%)</th>)),
                                 <th key={`${period.key}-avg`} className="p-2 border font-bold text-gray-700 bg-gray-200">MEDIA</th>
                             ])}
                         </tr>
@@ -520,10 +520,10 @@ const GestionAcademicaView: React.FC = () => {
                     <tbody>
                         {Object.entries(finalGradesAndAverages.studentGroups).map(([groupName, studentsInGroup]: [string, Student[]]) => (
                             <React.Fragment key={groupName}>
-                                <tr><td colSpan={100} className="bg-gray-200 font-bold p-1 text-left pl-4">{groupName}</td></tr>
+                                <tr><td colSpan={100} className="bg-gray-200 font-bold p-1 text-left pl-4 sticky top-[68px] z-10">{groupName}</td></tr>
                                 {studentsInGroup.map((student, index) => (
                                 <tr key={student.id} className={`group hover:bg-orange-100 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                                        <td className={`p-1 border text-left font-semibold text-gray-800 w-48 sticky left-0 group-hover:bg-orange-100 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</td>
+                                        <td className={`p-1 border text-left font-semibold text-gray-800 w-48 sticky left-0 z-10 group-hover:bg-orange-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</td>
                                         {ACADEMIC_EVALUATION_STRUCTURE.periods.flatMap(period => {
                                             const studentAverage = finalGradesAndAverages.studentGrades[student.id].averages[period.key];
                                             return [
