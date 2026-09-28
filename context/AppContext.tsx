@@ -4,7 +4,7 @@ import {
     Student, PracticeGroup, Service, ServiceEvaluation, ServiceRole, EntryExitRecord, 
     AcademicGrades, CourseGrades, PracticalExamEvaluation, TeacherData, InstituteData, Toast, ToastType, StudentCalculatedGrades, TrimesterDates,
     ResultadoAprendizaje, CriterioEvaluacion, InstrumentoEvaluacion, Profesor, UnidadTrabajo, InstrumentGrades,
-    FemConfigs, PcFemSettings,
+    FemConfigs, PcFemSettings, WorkshopPractice,
 } from '../types';
 import { parseFile } from '../services/csvParser';
 import { auth, signInWithGoogle, logout } from '../lib/firebase';
@@ -258,6 +258,8 @@ interface AppContextType {
     setProyectoGroups: React.Dispatch<React.SetStateAction<ProyectoGroup[]>>;
     services: Service[];
     setServices: React.Dispatch<React.SetStateAction<Service[]>>;
+    workshopPractices: WorkshopPractice[];
+    setWorkshopPractices: React.Dispatch<React.SetStateAction<WorkshopPractice[]>>;
     serviceEvaluations: ServiceEvaluation[];
     setServiceEvaluations: React.Dispatch<React.SetStateAction<ServiceEvaluation[]>>;
     serviceRoles: ServiceRole[];
@@ -398,6 +400,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [practiceGroups, setPracticeGroups, setPracticeGroupsRaw] = useSyncedState<PracticeGroup[]>('practiceGroups', [], user, setSyncStatus);
     const [proyectoGroups, setProyectoGroups, setProyectoGroupsRaw] = useSyncedState<ProyectoGroup[]>('proyectoGroups', [], user, setSyncStatus);
     const [services, setServices, setServicesRaw] = useSyncedState<Service[]>('services', [], user, setSyncStatus);
+    const [workshopPractices, setWorkshopPractices, setWorkshopPracticesRaw] = useSyncedState<WorkshopPractice[]>('workshopPractices', [], user, setSyncStatus);
     const [serviceEvaluations, setServiceEvaluations, setServiceEvaluationsRaw] = useSyncedState<ServiceEvaluation[]>('serviceEvaluations', [], user, setSyncStatus);
     const [serviceRoles, setServiceRoles, setServiceRolesRaw] = useSyncedState<ServiceRole[]>('serviceRoles', [
         { id: 'role1', name: 'Jefe de Cocina', color: '#ef4444', type: 'leader' },
@@ -499,6 +502,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 { key: 'students', current: students, rawSetter: setStudentsRaw },
                 { key: 'practiceGroups', current: practiceGroups, rawSetter: setPracticeGroupsRaw },
                 { key: 'services', current: services, rawSetter: setServicesRaw },
+                { key: 'workshopPractices', current: workshopPractices, rawSetter: setWorkshopPracticesRaw },
                 { key: 'serviceEvaluations', current: serviceEvaluations, rawSetter: setServiceEvaluationsRaw },
                 { key: 'serviceRoles', current: serviceRoles, rawSetter: setServiceRolesRaw },
                 { key: 'entryExitRecords', current: entryExitRecords, rawSetter: setEntryExitRecordsRaw },
@@ -1145,7 +1149,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const value: AppContextType = {
-        students, setStudents, practiceGroups, setPracticeGroups, proyectoGroups, setProyectoGroups, services, setServices, serviceEvaluations, setServiceEvaluations, serviceRoles, setServiceRoles, entryExitRecords, setEntryExitRecords, academicGrades, setAcademicGrades, instrumentGrades, setInstrumentGrades, courseGrades, setCourseGrades, practicalExamEvaluations, setPracticalExamEvaluations, teacherData, setTeacherData, instituteData, setInstituteData, trimesterDates, setTrimesterDates,
+        students, setStudents, practiceGroups, setPracticeGroups, proyectoGroups, setProyectoGroups, services, setServices, workshopPractices, setWorkshopPractices, serviceEvaluations, setServiceEvaluations, serviceRoles, setServiceRoles, entryExitRecords, setEntryExitRecords, academicGrades, setAcademicGrades, instrumentGrades, setInstrumentGrades, courseGrades, setCourseGrades, practicalExamEvaluations, setPracticalExamEvaluations, teacherData, setTeacherData, instituteData, setInstituteData, trimesterDates, setTrimesterDates,
         femConfigs, setFemConfigs, pcFemSettings, setPcFemSettings,
         
         pcResultadosAprendizaje, setPcResultadosAprendizaje, pcCriteriosEvaluacion, setPcCriteriosEvaluacion, pcInstrumentosEvaluacion, setPcInstrumentosEvaluacion, pcUnidadesTrabajo, setPcUnidadesTrabajo,

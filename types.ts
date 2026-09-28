@@ -408,3 +408,20 @@ export interface PcFemSettings {
   recEvaluates100Percent: boolean;
 }
 
+export interface WorkshopPractice {
+    id: string;
+    title: string;
+    date: string;
+    trimester: 't1' | 't2' | 't3';
+    weekNumber: number;
+    description: string;
+    isLocked: boolean;
+    evaluations: {
+        [studentId: string]: {
+            attendance: boolean;
+            scores: (number | null)[];
+            observations: string;
+        };
+    };
+}
+
