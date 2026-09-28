@@ -747,15 +747,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         }
                     }
 
-                    // 2. Individual Grade (60% weight)
+                    // 2. Individual Grade
                     const hasIndividualData = individualEval?.scores?.some(s => s !== null);
                     let individualGrade = (individualEval?.scores || []).reduce((sum, score) => sum + (score || 0), 0);
                     
-                    // IF NO DATA ENTERED AT ALL, SKIP
                     if (!hasIndividualData && !hasGroupData) return;
 
-                    // DEFINITIVE FIX: INHERITANCE LOGIC
-                    // If group is graded but individual is blank, student gets group grade as individual base
                     if (!hasIndividualData && hasGroupData) {
                         individualGrade = groupGrade;
                     }
@@ -767,10 +764,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     const finalServiceScore = (individualGrade * SERVICE_GRADE_WEIGHTS.individual) + (groupGrade * SERVICE_GRADE_WEIGHTS.group);
                     serviceScoresForTrimester.push(finalServiceScore);
                 });
-    
+
+                // Pre-Service scores for trimester
+                const preServiceScoresForTrimester: number[] = [];
+                servicesInTrimester.forEach(service => {
+                    const evaluation = serviceEvaluations.find(e => e.serviceId === service.id);
+                    if (!evaluation || !evaluation.preService) return;
+                    Object.values(evaluation.preService).forEach((preDay: any) => {
+                        const studentPreEval = preDay.individualEvaluations?.[student.id];
+                        if (!studentPreEval || studentPreEval.attendance === false) return;
+                        const scoresObj = studentPreEval.behaviorScores || {};
+                        const sumScores = Object.values(scoresObj).reduce((a: number, b: any) => a + (b || 0), 0);
+                        if (sumScores > 0 || Object.keys(scoresObj).length > 0) {
+                            preServiceScoresForTrimester.push(sumScores);
+                        }
+                    });
+                });
+
+                // Workshop Practice scores for trimester
+                const workshopScoresForTrimester: number[] = [];
+                workshopPractices.filter(wp => wp.trimester === trimester).forEach(wp => {
+                    const studentWpEval = wp.evaluations[student.id];
+                    if (!studentWpEval || studentWpEval.attendance === false) return;
+                    const scoresArr = studentWpEval.scores || [];
+                    const sumScores = scoresArr.reduce((a: number, b: any) => a + (b || 0), 0);
+                    if (scoresArr.some(s => s !== null)) {
+                        workshopScoresForTrimester.push(sumScores);
+                    }
+                });
+
+                const componentAverages: number[] = [];
                 if (serviceScoresForTrimester.length > 0) {
-                    const averageForTrimester = serviceScoresForTrimester.reduce((sum, score) => sum + score, 0) / serviceScoresForTrimester.length;
-                    studentGrades[student.id].serviceAverages[trimester] = parseFloat(averageForTrimester.toFixed(2));
+                    componentAverages.push(serviceScoresForTrimester.reduce((a, b) => a + b, 0) / serviceScoresForTrimester.length);
+                }
+                if (preServiceScoresForTrimester.length > 0) {
+                    componentAverages.push(preServiceScoresForTrimester.reduce((a, b) => a + b, 0) / preServiceScoresForTrimester.length);
+                }
+                if (workshopScoresForTrimester.length > 0) {
+                    componentAverages.push(workshopScoresForTrimester.reduce((a, b) => a + b, 0) / workshopScoresForTrimester.length);
+                }
+
+                if (componentAverages.length > 0) {
+                    const trimesterAverage = componentAverages.reduce((a, b) => a + b, 0) / componentAverages.length;
+                    studentGrades[student.id].serviceAverages[trimester] = parseFloat(trimesterAverage.toFixed(2));
                 }
             });
     
@@ -781,7 +817,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
     
         return studentGrades;
-    }, [students, services, serviceEvaluations, practicalExamEvaluations, practiceGroups]);
+    }, [students, services, serviceEvaluations, workshopPractices, practicalExamEvaluations, practiceGroups]);
     
     // --- CRUD Handlers ---
     const createCRUDHandlers = (

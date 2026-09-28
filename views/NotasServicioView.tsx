@@ -245,7 +245,18 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
 
             {/* --- TAB 1: SERVICIO --- */}
             {activeTab === 'servicios' && (
-                <div>
+                <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div>
+                            <span className="font-bold text-sm">ℹ️ Nota Trimestral del Bloque Práctico:</span>
+                            <p className="mt-0.5 text-blue-800">
+                                Las columnas de media trimestral calculan automáticamente la media entre las tres partes evaluadas: 
+                                <span className="font-semibold mx-1">Servicios</span> + 
+                                <span className="font-semibold mx-1">Días Previos</span> + 
+                                <span className="font-semibold mx-1">Prácticas Diarias (Semanal)</span>.
+                            </p>
+                        </div>
+                    </div>
                     {sortedServices.length === 0 ? (
                         <div className="text-center p-8 bg-white rounded-lg shadow">
                             <h2 className="text-2xl font-bold text-gray-700">No hay servicios planificados</h2>

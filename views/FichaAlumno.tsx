@@ -138,6 +138,7 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
     practicalExamEvaluations: allPracticalExamEvaluations,
     setPracticalExamEvaluations,
     entryExitRecords: allEntryExitRecords,
+    workshopPractices,
     handleDeleteEntryExitRecord,
     addToast,
     femConfigs,
@@ -293,8 +294,20 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
         }
     });
 
+    workshopPractices.forEach(wp => {
+        const studentEval = wp.evaluations[student.id];
+        if (studentEval?.observations) {
+            events.push({
+                date: new Date(wp.date.replace(/-/g, '/')),
+                type: 'observacion',
+                title: `Práctica Taller: ${wp.title}`,
+                content: studentEval.observations,
+            });
+        }
+    });
+
     return events.sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [studentEntryExitRecords, serviceEvaluations, services, student.id]);
+  }, [studentEntryExitRecords, serviceEvaluations, workshopPractices, services, student.id]);
 
   const handlePhotoClick = () => fileInputRef.current?.click();
 
