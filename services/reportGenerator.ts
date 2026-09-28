@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { TeacherData, InstituteData, Student, InstrumentGrades, InstrumentoEvaluacion, PracticalExamEvaluation } from '../types';
+import { TeacherData, InstituteData, Student, InstrumentGrades, InstrumentoEvaluacion, PracticalExamEvaluation, Service, ServiceEvaluation, PracticeGroup } from '../types';
 
 const PAGE_MARGIN = 15;
 
@@ -373,4 +373,210 @@ export const generateGenericTablePDF = (
     });
 
     doc.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+};
+
+export const generateGroupsPDF = (
+    practiceGroups: { id: string; name: string; studentIds: string[] }[],
+    students: Student[],
+    teacherData: TeacherData,
+    instituteData: InstituteData
+) => {
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const title = 'Definición de Grupos de Práctica';
+    
+    const drawPageHeader = () => {
+        drawHeaderAndFooter(doc, teacherData, instituteData, title);
+    };
+
+    drawPageHeader();
+
+    let currentY = 45;
+    const studentMap = new Map(students.map(s => [s.id, s]));
+
+    if (practiceGroups.length === 0) {
+        doc.setFontSize(11).setFont('helvetica', 'italic').text('No hay grupos definidos.', PAGE_MARGIN, currentY);
+    } else {
+        practiceGroups.forEach((group) => {
+            const members = group.studentIds
+                .map(id => studentMap.get(id))
+                .filter(Boolean) as Student[];
+
+            members.sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+
+            if (currentY > 240) {
+                doc.addPage();
+                currentY = 45;
+                drawPageHeader();
+            }
+
+            doc.setFontSize(12).setFont('helvetica', 'bold').setTextColor(40);
+            doc.text(`${group.name} (${members.length} miembros)`, PAGE_MARGIN, currentY);
+            currentY += 4;
+
+            const body = members.map((m, i) => [
+                i + 1,
+                `${m.apellido1} ${m.apellido2}, ${m.nombre}`,
+                m.grupo || '-'
+            ]);
+
+            autoTable(doc, {
+                startY: currentY,
+                margin: { top: 42, left: PAGE_MARGIN, right: PAGE_MARGIN },
+                head: [['Nº', 'Apellidos y Nombre', 'Grupo']],
+                body: body.length > 0 ? body : [[{ content: 'Sin alumnos asignados en este grupo', colSpan: 3, styles: { halign: 'center', fontStyle: 'italic', textColor: 120 } }]],
+                theme: 'grid',
+                headStyles: { fillColor: [66, 133, 244], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+                styles: { fontSize: 9, cellPadding: 2 },
+                didDrawPage: drawPageHeader
+            });
+
+            currentY = (doc as any).lastAutoTable.finalY + 12;
+        });
+
+        const assignedIds = new Set(practiceGroups.flatMap(g => g.studentIds));
+        const unassignedStudents = students.filter(s => !assignedIds.has(s.id));
+
+        if (unassignedStudents.length > 0) {
+            if (currentY > 240) {
+                doc.addPage();
+                currentY = 45;
+                drawPageHeader();
+            }
+
+            doc.setFontSize(12).setFont('helvetica', 'bold').setTextColor(180, 50, 50);
+            doc.text(`Alumnos sin Grupo (${unassignedStudents.length})`, PAGE_MARGIN, currentY);
+            currentY += 4;
+
+            const unassignedBody = unassignedStudents
+                .sort((a, b) => a.apellido1.localeCompare(b.apellido1))
+                .map((m, i) => [
+                    i + 1,
+                    `${m.apellido1} ${m.apellido2}, ${m.nombre}`,
+                    m.grupo || '-'
+                ]);
+
+            autoTable(doc, {
+                startY: currentY,
+                margin: { top: 42, left: PAGE_MARGIN, right: PAGE_MARGIN },
+                head: [['Nº', 'Apellidos y Nombre', 'Grupo']],
+                body: unassignedBody,
+                theme: 'grid',
+                headStyles: { fillColor: [234, 67, 53], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+                styles: { fontSize: 9, cellPadding: 2 },
+                didDrawPage: drawPageHeader
+            });
+        }
+    }
+
+    doc.save(`Grupos_de_Practica_${new Date().toISOString().split('T')[0]}.pdf`);
+};
+
+export const generateServicesReportPDF = (
+    services: Service[],
+    students: Student[],
+    serviceEvaluations: ServiceEvaluation[],
+    practiceGroups: PracticeGroup[],
+    teacherData: TeacherData,
+    instituteData: InstituteData
+) => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const title = 'Calificaciones y Control de Servicios';
+    
+    const drawPageHeader = () => {
+        drawHeaderAndFooter(doc, teacherData, instituteData, title);
+    };
+
+    drawPageHeader();
+
+    const sortedServices = [...services].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedStudents = [...students].sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+
+    const headers = [
+        'Alumno',
+        ...sortedServices.map(s => `${s.name}\n(${new Date(s.date).toLocaleDateString('es-ES')})`)
+    ];
+
+    const body = sortedStudents.map(student => {
+        const row: any[] = [`${student.apellido1} ${student.apellido2}, ${student.nombre}`];
+        sortedServices.forEach(service => {
+            const evaluation = serviceEvaluations.find(e => e.serviceId === service.id);
+            const individualEval = evaluation?.serviceDay.individualScores[student.id];
+            
+            let studentParticipated = false;
+            let groupEvalSourceId: string | undefined = undefined;
+            const studentPracticeGroup = practiceGroups.find(pg => pg.studentIds.includes(student.id));
+
+            if (service.type === 'normal' && studentPracticeGroup) {
+                studentParticipated = (service.assignedGroups.comedor || []).includes(studentPracticeGroup.id) || 
+                                   (service.assignedGroups.takeaway || []).includes(studentPracticeGroup.id);
+                groupEvalSourceId = studentPracticeGroup.id;
+            } else if (service.type === 'agrupacion') {
+                const studentAgrupacion = (service.agrupaciones || []).find(a => a.studentIds.includes(student.id));
+                if (studentAgrupacion) {
+                    studentParticipated = true;
+                    groupEvalSourceId = studentAgrupacion.id;
+                }
+            }
+
+            if (!studentParticipated) {
+                row.push('-');
+                return;
+            }
+
+            if (!evaluation) {
+                row.push('Sin eval');
+                return;
+            }
+
+            const isPresent = individualEval ? (individualEval.attendance ?? true) : true;
+            if (!isPresent) {
+                row.push('Falta');
+                return;
+            }
+
+            const hasIndividualData = individualEval?.scores?.some(s => s !== null);
+            let individualGrade = (individualEval?.scores || []).reduce((sum, score) => sum + (score || 0), 0);
+            
+            let groupGrade = 0;
+            let hasGroupData = false;
+            if (groupEvalSourceId) {
+                const groupEval = evaluation.serviceDay.groupScores[groupEvalSourceId];
+                if (groupEval) {
+                    hasGroupData = groupEval.scores?.some(s => s !== null);
+                    groupGrade = (groupEval.scores || []).reduce((sum, score) => sum + (score || 0), 0);
+                }
+            }
+
+            if (!hasIndividualData && !hasGroupData) {
+                row.push('-');
+                return;
+            }
+
+            if (!hasIndividualData && hasGroupData) {
+                individualGrade = groupGrade;
+            }
+
+            if (individualEval?.halveGroupScore) groupGrade /= 2;
+
+            const finalServiceGrade = (individualGrade * 0.6) + (groupGrade * 0.4);
+            row.push(finalServiceGrade.toFixed(2));
+        });
+        return row;
+    });
+
+    autoTable(doc, {
+        startY: 42,
+        margin: { top: 42, left: PAGE_MARGIN, right: PAGE_MARGIN },
+        head: [headers],
+        body: body,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 133, 244], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 7, cellPadding: 2, halign: 'center' },
+        columnStyles: {
+            0: { halign: 'left', cellWidth: 50 }
+        },
+        didDrawPage: drawPageHeader
+    });
+
+    doc.save(`Calificaciones_Servicios_${new Date().toISOString().split('T')[0]}.pdf`);
 };

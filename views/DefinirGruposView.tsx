@@ -3,9 +3,11 @@ import { PracticeGroup } from '../types';
 import { 
     PlusIcon,
     TrashIcon,
-    SearchIcon
+    SearchIcon,
+    PrinterIcon
 } from '../components/icons';
 import { useAppContext } from '../context/AppContext';
+import { generateGroupsPDF } from '../services/reportGenerator';
 
 const groupColors = [
   'bg-red-200 border-red-300', 'bg-blue-200 border-blue-300', 
@@ -14,7 +16,7 @@ const groupColors = [
 ];
 
 const DefinirGruposView: React.FC = () => {
-    const { students, practiceGroups, setPracticeGroups, addToast } = useAppContext();
+    const { students, practiceGroups, setPracticeGroups, teacherData, instituteData, addToast } = useAppContext();
     const [searchTerm, setSearchTerm] = useState('');
 
     const studentAssignments = useMemo(() => {
@@ -91,6 +93,13 @@ const DefinirGruposView: React.FC = () => {
                     <p className="text-sm text-gray-500 mt-1">Arrastra alumnos a los grupos o usa el selector. Los cambios se guardan automáticamente.</p>
                 </div>
                 <div className="flex space-x-3">
+                    <button 
+                        onClick={() => generateGroupsPDF(practiceGroups, students, teacherData, instituteData)}
+                        className="flex items-center bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition shadow-sm"
+                    >
+                        <PrinterIcon className="w-5 h-5 mr-1.5" />
+                        Imprimir / PDF Grupos
+                    </button>
                     <button onClick={handleAddGroup} className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
                         <PlusIcon className="w-5 h-5 mr-1" />
                         Añadir Grupo
