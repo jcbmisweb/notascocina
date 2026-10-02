@@ -325,7 +325,7 @@ export const TabletModeView: React.FC<TabletModeViewProps> = ({
                                     <span>📋</span> Verificación Obligatoria (Checklist)
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {FINAL_EXAM_CHECKLIST.map(chk => {
+                                    {FINAL_EXAM_CHECKLIST.flatMap(grp => grp.items.map(chk => ({ ...chk, groupTitle: grp.title }))).map(chk => {
                                         const isChecked = currentEvaluation?.checklist?.[chk.id] ?? true;
                                         return (
                                             <button
@@ -345,7 +345,7 @@ export const TabletModeView: React.FC<TabletModeViewProps> = ({
                                                 </div>
                                                 <div>
                                                     <span className="font-bold text-xs block">{chk.label}</span>
-                                                    <span className="text-[10px] opacity-70 block">{chk.requirement}</span>
+                                                    <span className="text-[10px] opacity-70 block">{chk.groupTitle}</span>
                                                 </div>
                                             </button>
                                         );

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
-import { Student, TimelineEvent, PreServiceDayEvaluation, ResultadoAprendizaje, Service, CourseModuleGrades, GradeValue, CriterioEvaluacion, StudentCalculatedGrades, ActivityGrade } from '../types';
+import { Student, TimelineEvent, PreServiceDayEvaluation, ResultadoAprendizaje, Service, CourseModuleGrades, GradeValue, CriterioEvaluacion, StudentCalculatedGrades, ActivityGrade, InstrumentoEvaluacion } from '../types';
 import { 
     PencilIcon,
     CameraIcon,
@@ -183,7 +183,7 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
   }, [getGradeNormal, getGradeRec1, getGradeRec2]);
 
   const examsByTrimester = useMemo(() => {
-    const examInstrument = Object.values(pcInstrumentosEvaluacion).find(inst => 
+    const examInstrument = (Object.values(pcInstrumentosEvaluacion) as InstrumentoEvaluacion[]).find((inst: InstrumentoEvaluacion) => 
         inst.nombre?.toLowerCase() === 'examen' || inst.id?.toLowerCase() === 'examen'
     );
     if (!examInstrument) return { t1: [], t2: [], t3: [] };

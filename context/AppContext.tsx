@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-    Student, PracticeGroup, Service, ServiceEvaluation, ServiceRole, EntryExitRecord, 
+    Student, PracticeGroup, ProyectoGroup, Service, ServiceEvaluation, ServiceRole, EntryExitRecord, 
     AcademicGrades, CourseGrades, PracticalExamEvaluation, TeacherData, InstituteData, Toast, ToastType, StudentCalculatedGrades, TrimesterDates,
     ResultadoAprendizaje, CriterioEvaluacion, InstrumentoEvaluacion, Profesor, UnidadTrabajo, InstrumentGrades,
     FemConfigs, PcFemSettings, WorkshopPractice, ProyectoEvaluationsState,
@@ -431,6 +431,7 @@ interface AppContextType {
     pendingOfflineCount: number;
     flushOfflineQueue: () => Promise<void>;
     triggerManualSync: (isManual?: boolean) => Promise<void>;
+    isStudentConvalidated: (studentId: string, moduleKey: 'pc' | 'optativa' | 'proyecto') => boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -556,7 +557,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const handleOffline = () => {
             setIsOnline(false);
             setSyncStatus('offline');
-            addToast("📶 Modo Taller / Sin Cobertura activado: Las calificaciones y notas se guardan de forma segura en este dispositivo.", "warning");
+            addToast("📶 Modo Taller / Sin Cobertura activado: Las calificaciones y notas se guardan de forma segura en este dispositivo.", "info");
         };
 
         window.addEventListener('online', handleOnline);
@@ -904,7 +905,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         const studentPreEval = preDay.individualEvaluations?.[student.id];
                         if (!studentPreEval || studentPreEval.attendance === false) return;
                         const scoresObj = studentPreEval.behaviorScores || {};
-                        const sumScores = Object.values(scoresObj).reduce((a: number, b: any) => a + (b || 0), 0);
+                        const sumScores: number = (Object.values(scoresObj) as any[]).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
                         if (sumScores > 0 || Object.keys(scoresObj).length > 0) {
                             preServiceScoresForTrimester.push(sumScores);
                         }
@@ -1314,6 +1315,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     };
 
+    const isStudentConvalidated = useCallback((studentId: string, moduleKey: 'pc' | 'optativa' | 'proyecto'): boolean => {
+        if (moduleKey === 'pc') {
+            return Boolean(femConfigs?.[studentId]?.isConvalidated || courseGrades?.[studentId]?.pc?.isConvalidated);
+        }
+        return Boolean(courseGrades?.[studentId]?.[moduleKey]?.isConvalidated);
+    }, [femConfigs, courseGrades]);
+
     const value: AppContextType = {
         students, setStudents, practiceGroups, setPracticeGroups, proyectoGroups, setProyectoGroups, services, setServices, workshopPractices, setWorkshopPractices, serviceEvaluations, setServiceEvaluations, serviceRoles, setServiceRoles, entryExitRecords, setEntryExitRecords, academicGrades, setAcademicGrades, instrumentGrades, setInstrumentGrades, courseGrades, setCourseGrades, proyectoEvaluations, setProyectoEvaluations, practicalExamEvaluations, setPracticalExamEvaluations, teacherData, setTeacherData, instituteData, setInstituteData, trimesterDates, setTrimesterDates,
         femConfigs, setFemConfigs, pcFemSettings, setPcFemSettings,
@@ -1338,7 +1346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         
         user,
         loading,
-        signIn: signInWithGoogle,
+        signIn: async () => { await signInWithGoogle(); },
         signOut: logout,
 
         calculatedStudentGrades,
@@ -1346,7 +1354,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isOnline,
         pendingOfflineCount,
         flushOfflineQueue,
-        triggerManualSync
+        triggerManualSync,
+        isStudentConvalidated
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

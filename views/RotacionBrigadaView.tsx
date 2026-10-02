@@ -9,6 +9,15 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
+interface RotationRow {
+    student: Student;
+    group: PracticeGroup | null;
+    roleCounts: Record<string, number>;
+    totalServices: number;
+    hasLed: boolean;
+    history: { serviceName: string; date: string; trimester: string; roleName: string; isLeader: boolean }[];
+}
+
 export const RotacionBrigadaView: React.FC = () => {
     const { 
         students, 
@@ -34,15 +43,8 @@ export const RotacionBrigadaView: React.FC = () => {
     }, [services, selectedTrimester]);
 
     // Compute rotation stats for each student
-    const rotationMatrix = useMemo(() => {
-        const matrix: Record<string, {
-            student: Student;
-            group: PracticeGroup | null;
-            roleCounts: Record<string, number>;
-            totalServices: number;
-            hasLed: boolean; // whether they have been Jefe or Segundo
-            history: { serviceName: string; date: string; trimester: string; roleName: string; isLeader: boolean }[];
-        }> = {};
+    const rotationMatrix = useMemo<Record<string, RotationRow>>(() => {
+        const matrix: Record<string, RotationRow> = {};
 
         // Initialize for all students
         students.forEach(st => {
@@ -95,15 +97,15 @@ export const RotacionBrigadaView: React.FC = () => {
 
     // Filtered student rows
     const filteredRows = useMemo(() => {
-        return Object.values(rotationMatrix)
-            .filter(row => {
+        return (Object.values(rotationMatrix) as RotationRow[])
+            .filter((row: RotationRow) => {
                 const matchesSearch = `${row.student.nombre} ${row.student.apellido1} ${row.student.apellido2}`
                     .toLowerCase()
                     .includes(searchTerm.toLowerCase());
                 const matchesGroup = selectedGroupId === 'all' || row.group?.id === selectedGroupId;
                 return matchesSearch && matchesGroup;
             })
-            .sort((a, b) => a.student.apellido1.localeCompare(b.student.apellido1));
+            .sort((a: RotationRow, b: RotationRow) => a.student.apellido1.localeCompare(b.student.apellido1));
     }, [rotationMatrix, searchTerm, selectedGroupId]);
 
     // KPI Summary
@@ -112,7 +114,7 @@ export const RotacionBrigadaView: React.FC = () => {
         if (totalStudents === 0) return { totalServices: 0, leaderPercent: 0, pendingLeaders: 0 };
 
         let leadersCount = 0;
-        Object.values(rotationMatrix).forEach(row => {
+        (Object.values(rotationMatrix) as RotationRow[]).forEach((row: RotationRow) => {
             if (row.hasLed) leadersCount++;
         });
 
@@ -129,9 +131,9 @@ export const RotacionBrigadaView: React.FC = () => {
 
     // Students pending leadership
     const studentsPendingLeadership = useMemo(() => {
-        return Object.values(rotationMatrix)
-            .filter(r => !r.hasLed)
-            .map(r => r.student);
+        return (Object.values(rotationMatrix) as RotationRow[])
+            .filter((r: RotationRow) => !r.hasLed)
+            .map((r: RotationRow) => r.student);
     }, [rotationMatrix]);
 
     // Export PDF

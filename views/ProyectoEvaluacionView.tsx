@@ -28,8 +28,13 @@ export const ProyectoEvaluacionView: React.FC = () => {
         setCourseGrades,
         teacherData,
         instituteData,
-        addToast 
+        addToast,
+        isStudentConvalidated
     } = useAppContext();
+
+    const activeStudents = useMemo(() => {
+        return students.filter(s => !isStudentConvalidated(s.id, 'proyecto'));
+    }, [students, isStudentConvalidated]);
 
     // Local state for configuration and evaluations
     const [pesoGrupal, setPesoGrupal] = useState<number>(proyectoEvaluations.pesoGrupal ?? 50);
@@ -54,14 +59,14 @@ export const ProyectoEvaluacionView: React.FC = () => {
     // Student assignments map
     const studentGroupMap = useMemo(() => {
         const map: Record<string, ProyectoGroup | null> = {};
-        students.forEach(st => { map[st.id] = null; });
+        activeStudents.forEach(st => { map[st.id] = null; });
         proyectoGroups.forEach(grp => {
             grp.studentIds.forEach(stId => {
                 map[stId] = grp;
             });
         });
         return map;
-    }, [students, proyectoGroups]);
+    }, [activeStudents, proyectoGroups]);
 
     // Calculate final grade for a student
     const calculateStudentFinalGrade = (
@@ -277,8 +282,8 @@ export const ProyectoEvaluacionView: React.FC = () => {
 
     // Filtered students
     const sortedStudents = useMemo(() => {
-        return [...students].sort((a, b) => a.apellido1.localeCompare(b.apellido1));
-    }, [students]);
+        return [...activeStudents].sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+    }, [activeStudents]);
 
     const filteredStudents = useMemo(() => {
         return sortedStudents.filter(st => {
@@ -297,7 +302,7 @@ export const ProyectoEvaluacionView: React.FC = () => {
         let sinColaborar = 0;
         let aprobados = 0;
 
-        Object.values(studentEvals).forEach(ev => {
+        (Object.values(studentEvals) as StudentProyectoEvaluation[]).forEach(ev => {
             if (ev.finalGrade !== null && ev.finalGrade !== undefined) {
                 totalEvaluados++;
                 sum += ev.finalGrade;

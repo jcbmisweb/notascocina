@@ -119,7 +119,7 @@ const getGradeForActivity = (
 const GradesMatrix: React.FC<{
     instrument: InstrumentoEvaluacion;
 }> = ({ instrument }) => {
-    const { students, instrumentGrades, setInstrumentGrades, calculatedStudentGrades } = useAppContext();
+    const { students, instrumentGrades, setInstrumentGrades, calculatedStudentGrades, addToast, teacherData, instituteData } = useAppContext();
     const sortedStudents = useMemo(() => [...students].sort((a,b) => a.apellido1.localeCompare(b.apellido1)), [students]);
     
     const isCalculatedInstrument = useMemo(() => {
@@ -252,7 +252,7 @@ const GradesMatrix: React.FC<{
             });
             return newGrades;
         });
-        context.addToast('Todos los candados se han abierto. Ya puedes editar todas las notas.', 'info');
+        addToast('Todos los candados se han abierto. Ya puedes editar todas las notas.', 'info');
     };
 
     const handleExport = (format: 'pdf' | 'excel') => {
@@ -266,7 +266,7 @@ const GradesMatrix: React.FC<{
             })
         ])];
 
-        if (format === 'pdf') downloadPdfWithTables(`Instrumento: ${instrument.nombre}`, headers, bodies, {name: 'Teacher'}, {name: 'Institute'});
+        if (format === 'pdf') downloadPdfWithTables(`Instrumento: ${instrument.nombre}`, headers, bodies, teacherData, instituteData);
         else downloadExcel(`Instrumento: ${instrument.nombre}`, headers, bodies);
     };
 
@@ -399,7 +399,7 @@ const GradesMatrix: React.FC<{
                                                     onClick={() => {
                                                         if (activityGrade.isLockedNormal) {
                                                             toggleColumnLock(act.id, 'isLockedNormal');
-                                                            context.addToast(`Candado abierto para ${act.name}. ¡Ya puedes escribir!`, 'success');
+                                                            addToast(`Candado abierto para ${act.name}. ¡Ya puedes escribir!`, 'success');
                                                         }
                                                     }}
                                                     title={activityGrade.isLockedNormal ? "Columna bloqueada. Haz clic para desbloquear y poder escribir" : ""}
@@ -415,7 +415,7 @@ const GradesMatrix: React.FC<{
                                                            onFocus={() => {
                                                                if (activityGrade.isLockedNormal) {
                                                                    toggleColumnLock(act.id, 'isLockedNormal');
-                                                                   context.addToast(`Candado abierto para ${act.name}. ¡Ya puedes escribir!`, 'success');
+                                                                   addToast(`Candado abierto para ${act.name}. ¡Ya puedes escribir!`, 'success');
                                                                }
                                                            }}
                                                            className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedNormal ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`}
@@ -430,7 +430,7 @@ const GradesMatrix: React.FC<{
                                                     onClick={() => {
                                                         if (activityGrade.isLockedRec1) {
                                                             toggleColumnLock(act.id, 'isLockedRec1');
-                                                            context.addToast(`Candado abierto para Rec 1. ¡Ya puedes escribir!`, 'success');
+                                                            addToast(`Candado abierto para Rec 1. ¡Ya puedes escribir!`, 'success');
                                                         }
                                                     }}
                                                     title={activityGrade.isLockedRec1 ? "Columna bloqueada. Haz clic para desbloquear" : ""}
@@ -446,7 +446,7 @@ const GradesMatrix: React.FC<{
                                                            onFocus={() => {
                                                                if (activityGrade.isLockedRec1) {
                                                                    toggleColumnLock(act.id, 'isLockedRec1');
-                                                                   context.addToast(`Candado abierto para Rec 1. ¡Ya puedes escribir!`, 'success');
+                                                                   addToast(`Candado abierto para Rec 1. ¡Ya puedes escribir!`, 'success');
                                                                }
                                                            }}
                                                            className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedRec1 ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`} 
@@ -461,7 +461,7 @@ const GradesMatrix: React.FC<{
                                                     onClick={() => {
                                                         if (activityGrade.isLockedRec2) {
                                                             toggleColumnLock(act.id, 'isLockedRec2');
-                                                            context.addToast(`Candado abierto para Rec 2. ¡Ya puedes escribir!`, 'success');
+                                                            addToast(`Candado abierto para Rec 2. ¡Ya puedes escribir!`, 'success');
                                                         }
                                                     }}
                                                     title={activityGrade.isLockedRec2 ? "Columna bloqueada. Haz clic para desbloquear" : ""}
@@ -477,7 +477,7 @@ const GradesMatrix: React.FC<{
                                                            onFocus={() => {
                                                                if (activityGrade.isLockedRec2) {
                                                                    toggleColumnLock(act.id, 'isLockedRec2');
-                                                                   context.addToast(`Candado abierto para Rec 2. ¡Ya puedes escribir!`, 'success');
+                                                                   addToast(`Candado abierto para Rec 2. ¡Ya puedes escribir!`, 'success');
                                                                }
                                                            }}
                                                            className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedRec2 ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`} 

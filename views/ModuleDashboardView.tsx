@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { InstrumentoEvaluacion } from '../types';
 import StatCard from '../components/StatCard';
 import ActionCard from '../components/ActionCard';
-import { FileTextIcon, BookOpenIcon, PencilIcon, ClipboardListIcon, RotateCcwIcon, UsersIcon, CheckIcon, AlertTriangleIcon } from '../components/icons';
+import { FileTextIcon, BookOpenIcon, PencilIcon, ClipboardListIcon, RotateCcwIcon, UsersIcon, CheckIcon, AlertTriangleIcon, RefreshCwIcon, ChefHatIcon } from '../components/icons';
 import { ModalNotasExamenesTeoricos } from '../components/ModalNotasExamenesTeoricos';
 
 interface ModuleDashboardViewProps {
@@ -234,7 +235,7 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                                         {module === 'pc' ? (
                                             <>
                                                 {(() => {
-                                                    const examInstrument = Object.values(context.pcInstrumentosEvaluacion).find(inst => inst.nombre === 'Examen');
+                                                    const examInstrument = (Object.values(context.pcInstrumentosEvaluacion) as InstrumentoEvaluacion[]).find(inst => inst.nombre === 'Examen');
                                                     const getExamGrade = (activityName: string) => {
                                                         const activity = examInstrument?.activities.find(act => act.name === activityName);
                                                         if (!activity) return '-';

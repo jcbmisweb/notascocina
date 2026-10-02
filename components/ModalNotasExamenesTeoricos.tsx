@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { XIcon, SaveIcon, ClipboardCheckIcon, PencilIcon, CheckIcon } from './icons';
-import { Student } from '../types';
+import { Student, InstrumentoEvaluacion, ActivityGrade } from '../types';
 
 interface ModalNotasExamenesTeoricosProps {
     isOpen: boolean;
@@ -43,7 +43,7 @@ export const ModalNotasExamenesTeoricos: React.FC<ModalNotasExamenesTeoricosProp
     // Find all exam activities
     const availableExams = useMemo<ExamOption[]>(() => {
         const list: ExamOption[] = [];
-        Object.values(instrumentos || {}).forEach(inst => {
+        (Object.values(instrumentos || {}) as InstrumentoEvaluacion[]).forEach((inst: InstrumentoEvaluacion) => {
             const isExamInst = inst.nombre.toLowerCase().includes('examen') || 
                                inst.id.toLowerCase().includes('examen') ||
                                inst.nombre.toLowerCase().includes('teórico') ||
@@ -65,7 +65,7 @@ export const ModalNotasExamenesTeoricos: React.FC<ModalNotasExamenesTeoricosProp
         
         // If none found by filter, list all activities of first instrument
         if (list.length === 0) {
-            const first = Object.values(instrumentos || {})[0];
+            const first = (Object.values(instrumentos || {}) as InstrumentoEvaluacion[])[0];
             if (first && first.activities) {
                 first.activities.forEach(act => {
                     list.push({
@@ -180,7 +180,7 @@ export const ModalNotasExamenesTeoricos: React.FC<ModalNotasExamenesTeoricosProp
         let aprobados = 0;
         let suspensos = 0;
 
-        Object.values(localGrades).forEach(g => {
+        (Object.values(localGrades) as ActivityGrade[]).forEach((g: ActivityGrade) => {
             const best = Math.max(g.normal ?? 0, g.rec1 ?? 0, g.rec2 ?? 0);
             const hasAny = g.normal !== null || g.rec1 !== null || g.rec2 !== null;
             if (hasAny) {

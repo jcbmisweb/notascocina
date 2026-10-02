@@ -15,18 +15,23 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
     const { 
         students, services, practiceGroups, serviceEvaluations, 
         workshopPractices, setWorkshopPractices,
-        teacherData, instituteData, calculatedStudentGrades, addToast 
+        teacherData, instituteData, calculatedStudentGrades, addToast,
+        isStudentConvalidated
     } = useAppContext();
     
     const [activeTab, setActiveTab] = useState<'servicios' | 'dia-previo' | 'semanal'>('servicios');
     const [selectedPracticeId, setSelectedPracticeId] = useState<string | null>(null);
+
+    const activeStudents = useMemo(() => {
+        return students.filter(s => !isStudentConvalidated(s.id, 'pc'));
+    }, [students, isStudentConvalidated]);
 
     const sortedServices = useMemo(() => {
         return [...services].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [services]);
 
     const studentGroups = useMemo(() => {
-        const groups = students.reduce((acc, student) => {
+        const groups = activeStudents.reduce((acc, student) => {
             (acc[student.grupo] = acc[student.grupo] || []).push(student);
             return acc;
         }, {} as Record<string, Student[]>);
@@ -35,7 +40,7 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
             groups[groupName].sort((a,b) => a.apellido1.localeCompare(b.apellido1));
         });
         return groups;
-    }, [students]);
+    }, [activeStudents]);
 
     // --- TAB 1: SERVICIO LOGIC ---
     const serviceDataCalc = useMemo(() => {
@@ -283,7 +288,7 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                                     <tr></tr>
                                 </thead>
                                 <tbody>
-                                    {Object.entries(studentGroups).map(([groupName, studentsInGroup]) => (
+                                    {(Object.entries(studentGroups) as [string, Student[]][]).map(([groupName, studentsInGroup]) => (
                                         <React.Fragment key={groupName}>
                                             <tr><td colSpan={sortedServices.length + 4} className="bg-gray-200 font-bold p-1 text-left pl-4">{groupName}</td></tr>
                                             {studentsInGroup.map((student, index) => {
@@ -333,21 +338,21 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {students.map(student => (
+                                    {activeStudents.map(student => (
                                         <tr key={student.id} className="hover:bg-gray-50">
                                             <td className="p-2 border text-left font-medium text-gray-800">{student.apellido1} {student.apellido2}, {student.nombre}</td>
                                             {sortedServices.map(s => {
                                                 const evalData = serviceEvaluations.find(e => e.serviceId === s.id);
                                                 // Find any pre-service day eval for this service
-                                                const preServiceDays = evalData?.preService ? Object.values(evalData.preService) : [];
-                                                const studentIndEval = preServiceDays.map(d => d.individualEvaluations?.[student.id]).find(Boolean);
+                                                const preServiceDays: any[] = evalData?.preService ? Object.values(evalData.preService) : [];
+                                                const studentIndEval = preServiceDays.map((d: any) => d.individualEvaluations?.[student.id]).find(Boolean);
                                                 
                                                 if (!studentIndEval) return <td key={s.id} className="border text-gray-400">-</td>;
                                                 const isPresent = studentIndEval.attendance ?? true;
                                                 if (!isPresent) return <td key={s.id} className="border text-red-500 font-bold">Falta</td>;
 
                                                 const scoresObj = studentIndEval.behaviorScores || {};
-                                                const sumScores = Object.values(scoresObj).reduce((a: number, b: any) => a + (b || 0), 0);
+                                                const sumScores: number = (Object.values(scoresObj) as any[]).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
                                                 return (
                                                     <td key={s.id} className="border font-semibold">
                                                         {sumScores > 0 ? sumScores.toFixed(1) : 'OK'}

@@ -149,10 +149,10 @@ export const generateExamSchedulePDF = (
         tableWidth: colWidth,
         head: [['Orden', 'Hora Inicio', 'Hora Final', 'Nombre Alumno']],
         body: body,
-        theme: 'grid',
-        headStyles: { fillColor: [240, 244, 248], textColor: 50, fontStyle: 'bold', fontSize: 10 },
-        styles: { fontSize: 9, cellPadding: 2, halign: 'center' },
-        columnStyles: { 3: { halign: 'left', cellWidth: 'wrap' } },
+        theme: 'grid' as const,
+        headStyles: { fillColor: [240, 244, 248] as [number, number, number], textColor: 50, fontStyle: 'bold' as const, fontSize: 10 },
+        styles: { fontSize: 9, cellPadding: 2, halign: 'center' as const },
+        columnStyles: { 3: { halign: 'left' as const, cellWidth: 'wrap' as const } },
         didDrawPage: () => {
             drawHeaderAndFooter(doc, teacherData, instituteData, title);
         }

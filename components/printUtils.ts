@@ -84,7 +84,7 @@ export const downloadPdfWithTables = (
 
 
         // --- FOOTER ---
-        const pageNum = doc.internal.pages.length > 1 ? doc.internal.getCurrentPageInfo().pageNumber : 1;
+        const pageNum = (doc as any).internal.getCurrentPageInfo ? (doc as any).internal.getCurrentPageInfo().pageNumber : 1;
         
         // Footer Separator Line
         doc.line(pageMargin, pageHeight - 20, pageWidth - pageMargin, pageHeight - 20);

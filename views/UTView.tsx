@@ -73,7 +73,7 @@ const GestionarCriteriosUTModal: React.FC<GestionarCriteriosUTModalProps> = ({
     // Mapa inicial de criterios seleccionados para esta UT
     const [selectedCritIds, setSelectedCritIds] = useState<Set<string>>(() => {
         const initialSet = new Set<string>();
-        Object.values(criteriosEvaluacion).forEach(c => {
+        (Object.values(criteriosEvaluacion) as CriterioEvaluacion[]).forEach((c: CriterioEvaluacion) => {
             if (isCriterioAssociatedWithUT(c, ut, allUTs, resultadosAprendizaje)) {
                 initialSet.add(c.id);
             }
@@ -83,7 +83,7 @@ const GestionarCriteriosUTModal: React.FC<GestionarCriteriosUTModalProps> = ({
 
     useEffect(() => {
         const set = new Set<string>();
-        Object.values(criteriosEvaluacion).forEach(c => {
+        (Object.values(criteriosEvaluacion) as CriterioEvaluacion[]).forEach((c: CriterioEvaluacion) => {
             if (isCriterioAssociatedWithUT(c, ut, allUTs, resultadosAprendizaje)) {
                 set.add(c.id);
             }
@@ -107,9 +107,9 @@ const GestionarCriteriosUTModal: React.FC<GestionarCriteriosUTModalProps> = ({
 
     const handleSave = () => {
         const updatedList: CriterioEvaluacion[] = [];
-        const allCritList = Object.values(criteriosEvaluacion);
+        const allCritList = Object.values(criteriosEvaluacion) as CriterioEvaluacion[];
 
-        allCritList.forEach(crit => {
+        allCritList.forEach((crit: CriterioEvaluacion) => {
             const isCurrentlySelected = selectedCritIds.has(crit.id);
             const wasAssociated = isCriterioAssociatedWithUT(crit, ut, allUTs, resultadosAprendizaje);
 
@@ -159,7 +159,7 @@ const GestionarCriteriosUTModal: React.FC<GestionarCriteriosUTModalProps> = ({
                 </p>
 
                 <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-                    {Object.values(resultadosAprendizaje).map(ra => {
+                    {(Object.values(resultadosAprendizaje) as ResultadoAprendizaje[]).map((ra: ResultadoAprendizaje) => {
                         const critIdsForRA = ra.criteriosEvaluacion || [];
                         if (critIdsForRA.length === 0) return null;
 
@@ -261,7 +261,7 @@ const AsociacionesSummary: React.FC<AsociacionesSummaryProps> = ({
         criteriaForThisUT.forEach(crit => {
             let raId = crit.raId;
             if (!raId) {
-                const foundRA = Object.values(resultadosAprendizaje || {}).find(ra => (ra.criteriosEvaluacion || []).includes(crit.id));
+                const foundRA = (Object.values(resultadosAprendizaje || {}) as ResultadoAprendizaje[]).find((ra: ResultadoAprendizaje) => (ra.criteriosEvaluacion || []).includes(crit.id));
                 if (foundRA) {
                     raId = foundRA.id;
                 }
@@ -496,7 +496,7 @@ const UTView: React.FC<UTViewProps> = ({ module }) => {
                     const isExpanded = expandedUTs.has(ut.id);
                     
                     // Cuenta los criterios asociados a esta UT
-                    const countAssociated = Object.values(criteriosEvaluacion || {}).filter(c => 
+                    const countAssociated = (Object.values(criteriosEvaluacion || {}) as CriterioEvaluacion[]).filter((c: CriterioEvaluacion) => 
                         isCriterioAssociatedWithUT(c, ut, unidadesTrabajo, resultadosAprendizaje)
                     ).length;
 

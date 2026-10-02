@@ -6,6 +6,12 @@ import { PlusIcon, PencilIcon, TrashIcon, ChevronDownIcon, ChevronRightIcon, Sav
 import { calculateRAGrade, calculateCriterioGrade } from '../services/academicAnalytics';
 import { findMatchingUT } from '../utils/utAssociationUtils';
 
+const extractUTNumber = (str?: string): number | null => {
+    if (!str) return null;
+    const match = str.match(/(?:UT|RA|UD|U\.T\.|Unidad)?\s*(\d+)/i);
+    return match ? parseInt(match[1], 10) : null;
+};
+
 
 // Modal for RA/Criterio Form
 interface FormModalProps {
@@ -533,7 +539,7 @@ const RAView: React.FC<RAViewProps> = ({ module }) => {
                                                         </div>
                                                     ) : (
                                                         (() => {
-                                                            const alignedUT = findMatchingUT(ra.id, unidadesTrabajo) || Object.values(unidadesTrabajo).find(u => {
+                                                            const alignedUT = findMatchingUT(ra.id, unidadesTrabajo) || (Object.values(unidadesTrabajo) as UnidadTrabajo[]).find((u: UnidadTrabajo) => {
                                                                 const uNum = extractUTNumber(u.nombre) ?? extractUTNumber(u.id);
                                                                 const raNum = extractUTNumber(ra.nombre) ?? extractUTNumber(ra.id);
                                                                 return uNum !== null && raNum !== null && uNum === raNum;

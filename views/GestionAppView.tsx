@@ -119,7 +119,8 @@ const GestionAppView: React.FC = () => {
     const { 
         teacherData, setTeacherData, instituteData, setInstituteData, 
         serviceRoles, setServiceRoles, onDeleteRole, addToast,
-        trimesterDates, setTrimesterDates, handleResetApp
+        trimesterDates, setTrimesterDates, handleResetApp,
+        handleResetModuleCurricularData
     } = useAppContext();
     
     const [currentTeacherData, setCurrentTeacherData] = useState(teacherData);
@@ -291,8 +292,8 @@ const GestionAppView: React.FC = () => {
 
         if (window.confirm(`¡Atención! Esto sobrescribirá los ${restoreKeys.size} módulos de datos seleccionados. Los datos no seleccionados no se verán afectados. ¿Deseas continuar?`)) {
             try {
-                const keysArray = Array.from(restoreKeys).filter(key => backupData.hasOwnProperty(key));
-                keysArray.forEach(key => {
+                const keysArray = (Array.from(restoreKeys) as string[]).filter(key => backupData.hasOwnProperty(key));
+                keysArray.forEach((key: string) => {
                     localStorage.setItem(key, JSON.stringify(backupData[key]));
                 });
                 
@@ -499,7 +500,7 @@ const GestionAppView: React.FC = () => {
                             <button
                                 onClick={async () => {
                                     if (window.confirm("¿Restablecer el currículo oficial del módulo de Optativa (Cocina Sostenible) y sincronizarlo con la nube?")) {
-                                        await context.handleResetModuleCurricularData('optativa');
+                                        await handleResetModuleCurricularData('optativa');
                                     }
                                 }}
                                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-blue-300 text-blue-900 font-semibold rounded-lg hover:bg-blue-100 transition shadow-sm text-sm"
@@ -510,7 +511,7 @@ const GestionAppView: React.FC = () => {
                             <button
                                 onClick={async () => {
                                     if (window.confirm("¿Restablecer el currículo oficial del módulo de Productos Culinarios (PC) y sincronizarlo con la nube?")) {
-                                        await context.handleResetModuleCurricularData('pc');
+                                        await handleResetModuleCurricularData('pc');
                                     }
                                 }}
                                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-blue-300 text-blue-900 font-semibold rounded-lg hover:bg-blue-100 transition shadow-sm text-sm"
@@ -521,7 +522,7 @@ const GestionAppView: React.FC = () => {
                             <button
                                 onClick={async () => {
                                     if (window.confirm("¿Restablecer el currículo oficial del módulo de Proyecto Intermodular y sincronizarlo con la nube?")) {
-                                        await context.handleResetModuleCurricularData('proyecto');
+                                        await handleResetModuleCurricularData('proyecto');
                                     }
                                 }}
                                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-blue-300 text-blue-900 font-semibold rounded-lg hover:bg-blue-100 transition shadow-sm text-sm"

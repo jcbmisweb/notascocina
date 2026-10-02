@@ -239,7 +239,7 @@ const GestionAcademicaView: React.FC = () => {
                 const instGrades = instrumentGrades[student.id] || {};
 
                 // Find Exam activities for calculations
-                const examInstrument = Object.values(pcInstrumentosEvaluacion).find(inst => 
+                const examInstrument = (Object.values(pcInstrumentosEvaluacion) as InstrumentoEvaluacion[]).find((inst: InstrumentoEvaluacion) => 
                     inst.nombre?.toLowerCase() === 'examen' || inst.id?.toLowerCase() === 'examen'
                 );
                 
@@ -399,7 +399,7 @@ const GestionAcademicaView: React.FC = () => {
             return manualVal;
         }
         if (instrumentKey === 'examen1' || instrumentKey === 'examen2') {
-            const examInstrument = Object.values(pcInstrumentosEvaluacion).find(inst => 
+            const examInstrument = (Object.values(pcInstrumentosEvaluacion) as InstrumentoEvaluacion[]).find((inst: InstrumentoEvaluacion) => 
                 inst.nombre?.toLowerCase() === 'examen' || inst.id?.toLowerCase() === 'examen'
             );
             if (examInstrument) {
@@ -430,7 +430,7 @@ const GestionAcademicaView: React.FC = () => {
         });
 
         if (instrumentKey === 'examen1' || instrumentKey === 'examen2') {
-            const examInstrument = Object.values(pcInstrumentosEvaluacion).find(inst => 
+            const examInstrument = (Object.values(pcInstrumentosEvaluacion) as InstrumentoEvaluacion[]).find((inst: InstrumentoEvaluacion) => 
                 inst.nombre?.toLowerCase() === 'examen' || inst.id?.toLowerCase() === 'examen'
             );
             if (examInstrument) {
