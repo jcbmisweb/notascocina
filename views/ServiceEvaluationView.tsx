@@ -2,7 +2,9 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Service, ServiceEvaluation, Student, PracticeGroup, EntryExitRecord, PreServiceDayEvaluation, ServiceDayIndividualScores, Agrupacion, PreServiceIndividualEvaluation, ServiceRole } from '../types';
 import { PRE_SERVICE_BEHAVIOR_ITEMS, BEHAVIOR_RATING_MAP, GROUP_EVALUATION_ITEMS, INDIVIDUAL_EVALUATION_ITEMS } from '../data/constants';
-import { PlusIcon, TrashIcon, ChefHatIcon } from '../components/icons';
+import { PlusIcon, TrashIcon, ChefHatIcon, FileTextIcon } from '../components/icons';
+import { downloadServiceEvaluationPdf } from '../components/servicePdfUtils';
+import { useAppContext } from '../context/AppContext';
 
 interface ServiceEvaluationViewProps {
     service: Service;
@@ -288,6 +290,7 @@ const ServiceDayIndividualEvaluationTable: React.FC<{
 
 
 const ServiceEvaluationView: React.FC<ServiceEvaluationViewProps> = ({ service, evaluation, onEvaluationChange, students, practiceGroups, entryExitRecords, isLocked, serviceRoles }) => {
+    const { teacherData, instituteData, addToast } = useAppContext();
     const [activeTab, setActiveTab] = useState<'pre-service' | 'service-day'>('pre-service');
     const [activePreServiceDate, setActivePreServiceDate] = useState<string | null>(null);
 
@@ -517,11 +520,31 @@ const ServiceEvaluationView: React.FC<ServiceEvaluationViewProps> = ({ service, 
 
     return (
         <div className="space-y-6">
-            <div className="bg-white p-2 rounded-lg shadow-sm">
-                <nav className="flex space-x-1">
+            <div className="bg-white p-2 rounded-lg shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <nav className="flex space-x-1 flex-1">
                     <button onClick={() => setActiveTab('pre-service')} className={`flex-1 px-4 py-2 font-semibold text-sm rounded-md transition-colors ${activeTab === 'pre-service' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Día Previo</button>
                     <button onClick={() => setActiveTab('service-day')} className={`flex-1 px-4 py-2 font-semibold text-sm rounded-md transition-colors ${activeTab === 'service-day' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Día de Servicio</button>
                 </nav>
+                <button
+                    type="button"
+                    onClick={() => {
+                        downloadServiceEvaluationPdf({
+                            service,
+                            evaluation,
+                            students,
+                            practiceGroups,
+                            serviceRoles,
+                            teacherData,
+                            instituteData
+                        });
+                        addToast('PDF de Evaluaciones del Servicio generado con éxito.', 'success');
+                    }}
+                    className="flex items-center bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-semibold transition text-xs shadow-xs active:scale-95 whitespace-nowrap"
+                    title="Descargar PDF con las evaluaciones y notas del servicio"
+                >
+                    <FileTextIcon className="w-4 h-4 mr-1.5" />
+                    <span>Descargar PDF Evaluaciones</span>
+                </button>
             </div>
             
             {activeTab === 'pre-service' && (

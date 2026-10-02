@@ -406,11 +406,20 @@ const GradesMatrix: React.FC<{
                                                     className="inline-block"
                                                 >
                                                     <input type="number" 
+                                                           step="0.1"
+                                                           min="0"
+                                                           max="10"
                                                            value={activityGrade.normal ?? ''} 
                                                            onChange={e => handleGradeChange(student.id, act.id, 'normal', e.target.value)} 
                                                            onPaste={e => handlePasteColumn(e, index, act.id, 'normal')}
+                                                           onFocus={() => {
+                                                               if (activityGrade.isLockedNormal) {
+                                                                   toggleColumnLock(act.id, 'isLockedNormal');
+                                                                   context.addToast(`Candado abierto para ${act.name}. ¡Ya puedes escribir!`, 'success');
+                                                               }
+                                                           }}
                                                            className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedNormal ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`}
-                                                           disabled={activityGrade.isLockedNormal}
+                                                           readOnly={activityGrade.isLockedNormal}
                                                     />
                                                 </div>
                                             )}
@@ -427,7 +436,22 @@ const GradesMatrix: React.FC<{
                                                     title={activityGrade.isLockedRec1 ? "Columna bloqueada. Haz clic para desbloquear" : ""}
                                                     className="inline-block"
                                                 >
-                                                    <input type="number" value={activityGrade.rec1 ?? ''} onChange={e => handleGradeChange(student.id, act.id, 'rec1', e.target.value)} onPaste={e => handlePasteColumn(e, index, act.id, 'rec1')} className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedRec1 ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`} disabled={activityGrade.isLockedRec1}/>
+                                                    <input type="number" 
+                                                           step="0.1"
+                                                           min="0"
+                                                           max="10"
+                                                           value={activityGrade.rec1 ?? ''} 
+                                                           onChange={e => handleGradeChange(student.id, act.id, 'rec1', e.target.value)} 
+                                                           onPaste={e => handlePasteColumn(e, index, act.id, 'rec1')}
+                                                           onFocus={() => {
+                                                               if (activityGrade.isLockedRec1) {
+                                                                   toggleColumnLock(act.id, 'isLockedRec1');
+                                                                   context.addToast(`Candado abierto para Rec 1. ¡Ya puedes escribir!`, 'success');
+                                                               }
+                                                           }}
+                                                           className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedRec1 ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`} 
+                                                           readOnly={activityGrade.isLockedRec1}
+                                                    />
                                                 </div>
                                             )}
                                         </td>
@@ -443,7 +467,22 @@ const GradesMatrix: React.FC<{
                                                     title={activityGrade.isLockedRec2 ? "Columna bloqueada. Haz clic para desbloquear" : ""}
                                                     className="inline-block"
                                                 >
-                                                    <input type="number" value={activityGrade.rec2 ?? ''} onChange={e => handleGradeChange(student.id, act.id, 'rec2', e.target.value)} onPaste={e => handlePasteColumn(e, index, act.id, 'rec2')} className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedRec2 ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`} disabled={activityGrade.isLockedRec2}/>
+                                                    <input type="number" 
+                                                           step="0.1"
+                                                           min="0"
+                                                           max="10"
+                                                           value={activityGrade.rec2 ?? ''} 
+                                                           onChange={e => handleGradeChange(student.id, act.id, 'rec2', e.target.value)} 
+                                                           onPaste={e => handlePasteColumn(e, index, act.id, 'rec2')}
+                                                           onFocus={() => {
+                                                               if (activityGrade.isLockedRec2) {
+                                                                   toggleColumnLock(act.id, 'isLockedRec2');
+                                                                   context.addToast(`Candado abierto para Rec 2. ¡Ya puedes escribir!`, 'success');
+                                                               }
+                                                           }}
+                                                           className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedRec2 ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`} 
+                                                           readOnly={activityGrade.isLockedRec2}
+                                                    />
                                                 </div>
                                             )}
                                         </td>
@@ -484,7 +523,7 @@ const InstrumentosView: React.FC<InstrumentosViewProps> = ({ module }) => {
     }, [module, context]);
     
     const [localInstrumentos, setLocalInstrumentos] = useState(instrumentosEvaluacion);
-    const [expandedInstrument, setExpandedInstrument] = useState<string | null>(null);
+    const [expandedInstrument, setExpandedInstrument] = useState<string | null>(module === 'pc' ? 'examen' : null);
     const [modalState, setModalState] = useState<{ isOpen: boolean; data: InstrumentoEvaluacion | null }>({ isOpen: false, data: null });
 
     useEffect(() => {

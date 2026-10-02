@@ -15,28 +15,33 @@ const EvaluacionInstrumentosTab: React.FC = () => {
         instrumentGrades, setInstrumentGrades,
         optativaInstrumentosEvaluacion,
         proyectoInstrumentosEvaluacion,
+        pcInstrumentosEvaluacion,
         teacherData, instituteData,
         addToast
     } = useAppContext();
+
+    const [selectedModule, setSelectedModule] = useState<'pc' | 'optativa' | 'proyecto'>('pc');
+    const [localGrades, setLocalGrades] = useState(instrumentGrades);
+    const [isDirty, setIsDirty] = useState(false);
+    const [unlockedActivityIds, setUnlockedActivityIds] = useState<Set<string>>(new Set());
 
     const handleExport = (format: 'pdf' | 'excel') => {
         const headers = [['Alumno', ...activities.map(act => act.name)]];
         const rows = sortedStudents.map(student => [
             `${student.apellido1} ${student.apellido2}, ${student.nombre}`,
-            ...activities.map(act => localGrades[student.id]?.[act.id] ?? '-')
+            ...activities.map(act => {
+                const g = localGrades[student.id]?.[act.id];
+                const val = typeof g === 'object' && g !== null && 'normal' in g ? g.normal : (typeof g === 'number' ? g : null);
+                return val ?? '-';
+            })
         ]);
         
         if (format === 'pdf') {
-            generateGenericTablePDF('Evaluación por Instrumentos', [headers[0]], rows, teacherData, instituteData);
+            generateGenericTablePDF(`Evaluación por Instrumentos - ${selectedModule.toUpperCase()}`, [headers[0]], rows, teacherData, instituteData);
         } else {
-            downloadExcel('Evaluación por Instrumentos', headers, [rows]);
+            downloadExcel(`Evaluación por Instrumentos - ${selectedModule.toUpperCase()}`, headers, [rows]);
         }
     };
-
-    const [selectedModule, setSelectedModule] = useState<'optativa' | 'proyecto'>('optativa');
-    const [localGrades, setLocalGrades] = useState(instrumentGrades);
-    const [isDirty, setIsDirty] = useState(false);
-    const [unlockedActivityIds, setUnlockedActivityIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         setLocalGrades(instrumentGrades);
@@ -51,8 +56,7 @@ const EvaluacionInstrumentosTab: React.FC = () => {
                 setIsDirty(false);
                 setUnlockedActivityIds(new Set());
             } else {
-                // Revert module selection
-                setSelectedModule(prev => prev === 'optativa' ? 'proyecto' : 'optativa');
+                setSelectedModule(prev => prev === 'pc' ? 'optativa' : 'pc');
             }
         } else {
             setUnlockedActivityIds(new Set());
@@ -74,13 +78,7 @@ const EvaluacionInstrumentosTab: React.FC = () => {
     const handlePasteColumn = (e: React.ClipboardEvent, startIndex: number, activityId: string) => {
         e.preventDefault();
         const text = e.clipboardData.getData('text');
-        
-        // Check if unlocked (only if pasting more than one row)
         const rows = text.split(/\r?\n/).filter(r => r.trim() !== '');
-        if (rows.length > 1 && !unlockedActivityIds.has(activityId)) {
-            addToast('Columna bloqueada. Ábrela (candado verde) para poder pegar datos.', 'error');
-            return;
-        }
 
         setLocalGrades(prev => {
             const newGrades = JSON.parse(JSON.stringify(prev));
@@ -100,9 +98,12 @@ const EvaluacionInstrumentosTab: React.FC = () => {
         setIsDirty(true);
     };
 
-
     const activities = useMemo(() => {
-        const instruments = selectedModule === 'optativa' ? optativaInstrumentosEvaluacion : proyectoInstrumentosEvaluacion;
+        const instruments = selectedModule === 'pc'
+            ? pcInstrumentosEvaluacion
+            : selectedModule === 'optativa'
+            ? optativaInstrumentosEvaluacion
+            : proyectoInstrumentosEvaluacion;
         const acts = Object.values(instruments as Record<string, InstrumentoEvaluacion>).flatMap(inst => 
             inst.activities.map(act => ({ ...act, instrumentName: inst.nombre }))
         );
@@ -112,7 +113,7 @@ const EvaluacionInstrumentosTab: React.FC = () => {
             return a.name.localeCompare(b.name);
         });
         return acts;
-    }, [selectedModule, optativaInstrumentosEvaluacion, proyectoInstrumentosEvaluacion]);
+    }, [selectedModule, pcInstrumentosEvaluacion, optativaInstrumentosEvaluacion, proyectoInstrumentosEvaluacion]);
 
     const sortedStudents = useMemo(() => [...students].sort((a, b) => a.apellido1.localeCompare(b.apellido1)), [students]);
 
@@ -219,7 +220,7 @@ const GestionAcademicaView: React.FC = () => {
         academicGrades, setAcademicGrades, 
         courseGrades, setCourseGrades, 
         calculatedStudentGrades, 
-        instrumentGrades, 
+        instrumentGrades, setInstrumentGrades,
         optativaInstrumentosEvaluacion,
         proyectoInstrumentosEvaluacion,
         pcInstrumentosEvaluacion,
@@ -352,6 +353,7 @@ const GestionAcademicaView: React.FC = () => {
 
     const [localAcademicGrades, setLocalAcademicGrades] = useState(academicGrades);
     const [localCourseGrades, setLocalCourseGrades] = useState(courseGrades);
+    const [localInstrumentGrades, setLocalInstrumentGrades] = useState(instrumentGrades);
     const [isDirty, setIsDirty] = useState(false);
     
     const sortedStudents = useMemo(() => [...students].sort((a, b) => a.apellido1.localeCompare(b.apellido1)), [students]);
@@ -361,8 +363,9 @@ const GestionAcademicaView: React.FC = () => {
         setLocalCourseGrades(JSON.parse(JSON.stringify(courseGrades)));
         setLocalFemConfigs(JSON.parse(JSON.stringify(femConfigs)));
         setLocalPcFemSettings(JSON.parse(JSON.stringify(pcFemSettings)));
+        setLocalInstrumentGrades(JSON.parse(JSON.stringify(instrumentGrades)));
         setIsDirty(false);
-    }, [academicGrades, courseGrades, femConfigs, pcFemSettings]);
+    }, [academicGrades, courseGrades, femConfigs, pcFemSettings, instrumentGrades]);
 
     const finalGradesAndAverages = useMemo(() => {
         const studentGroups = students.reduce((acc, student) => {
@@ -381,18 +384,42 @@ const GestionAcademicaView: React.FC = () => {
                     localAcademicGrades[student.id],
                     calculatedStudentGrades[student.id],
                     student.id,
-                    instrumentGrades,
+                    localInstrumentGrades,
                     pcInstrumentosEvaluacion
                 )
             };
         });
         
         return { studentGroups, studentGrades };
-    }, [students, localAcademicGrades, calculatedStudentGrades, instrumentGrades, pcInstrumentosEvaluacion]);
+    }, [students, localAcademicGrades, calculatedStudentGrades, localInstrumentGrades, pcInstrumentosEvaluacion]);
+
+    const getManualGradeDisplay = (studentId: string, periodKey: string, instrumentKey: string): string | number => {
+        const manualVal = localAcademicGrades[studentId]?.[periodKey]?.manualGrades?.[instrumentKey];
+        if (manualVal !== undefined && manualVal !== null) {
+            return manualVal;
+        }
+        if (instrumentKey === 'examen1' || instrumentKey === 'examen2') {
+            const examInstrument = Object.values(pcInstrumentosEvaluacion).find(inst => 
+                inst.nombre?.toLowerCase() === 'examen' || inst.id?.toLowerCase() === 'examen'
+            );
+            if (examInstrument) {
+                const activitiesInPeriod = (examInstrument.activities || []).filter(a => a.trimester === periodKey);
+                const activityIndex = instrumentKey === 'examen1' ? 0 : 1;
+                const activity = activitiesInPeriod[activityIndex];
+                if (activity) {
+                    const grades = localInstrumentGrades[studentId]?.[activity.id] ?? instrumentGrades[student.id]?.[activity.id];
+                    const grade = typeof grades === 'object' && grades !== null && 'normal' in grades ? grades.normal : (typeof grades === 'number' ? grades : null);
+                    if (grade !== null && grade !== undefined) return grade;
+                }
+            }
+        }
+        return '';
+    };
 
     const handleManualGradeChange = (studentId: string, periodKey: string, instrumentKey: string, value: string) => {
-        const numericValue = value === '' ? null : parseFloat(value);
-        if (value !== '' && (isNaN(numericValue) || numericValue < 0 || numericValue > 10)) return;
+        const cleaned = value.replace(',', '.');
+        const numericValue = cleaned === '' ? null : parseFloat(cleaned);
+        if (cleaned !== '' && (isNaN(numericValue as number) || (numericValue as number) < 0 || (numericValue as number) > 10)) return;
 
         setLocalAcademicGrades(prev => {
             const newGrades = JSON.parse(JSON.stringify(prev));
@@ -401,6 +428,31 @@ const GestionAcademicaView: React.FC = () => {
             newGrades[studentId][periodKey].manualGrades[instrumentKey] = numericValue;
             return newGrades;
         });
+
+        if (instrumentKey === 'examen1' || instrumentKey === 'examen2') {
+            const examInstrument = Object.values(pcInstrumentosEvaluacion).find(inst => 
+                inst.nombre?.toLowerCase() === 'examen' || inst.id?.toLowerCase() === 'examen'
+            );
+            if (examInstrument) {
+                const activitiesInPeriod = (examInstrument.activities || []).filter(a => a.trimester === periodKey);
+                const activityIndex = instrumentKey === 'examen1' ? 0 : 1;
+                const activity = activitiesInPeriod[activityIndex];
+                if (activity) {
+                    setLocalInstrumentGrades(prev => {
+                        const newInstGrades = JSON.parse(JSON.stringify(prev));
+                        if (!newInstGrades[studentId]) newInstGrades[studentId] = {};
+                        const currentGrade = newInstGrades[studentId][activity.id];
+                        if (typeof currentGrade === 'object' && currentGrade !== null && 'normal' in currentGrade) {
+                            newInstGrades[studentId][activity.id] = { ...currentGrade, normal: numericValue, isLockedNormal: false };
+                        } else {
+                            newInstGrades[studentId][activity.id] = { normal: numericValue, rec1: null, rec2: null, isLockedNormal: false, isLockedRec1: false, isLockedRec2: false };
+                        }
+                        return newInstGrades;
+                    });
+                }
+            }
+        }
+
         setIsDirty(true);
     };
 
@@ -445,8 +497,9 @@ const GestionAcademicaView: React.FC = () => {
             setCourseGrades(localCourseGrades);
             setFemConfigs(localFemConfigs);
             setPcFemSettings(localPcFemSettings);
+            setInstrumentGrades(localInstrumentGrades);
             setIsDirty(false);
-            addToast('Calificaciones, ponderaciones y configuración de prácticas guardadas con éxito.', 'success');
+            addToast('Calificaciones, exámenes teóricos, ponderaciones y configuración de prácticas guardadas con éxito.', 'success');
         }
     };
 
@@ -547,27 +600,19 @@ const GestionAcademicaView: React.FC = () => {
                                                         }
                                                     }
                                                     return (
-                                                    <td key={`${period.key}-${instrument.key}`} className={`border ${instrument.type === 'calculated' ? 'bg-sky-50' : ''}`}>
+                                                    <td key={`${period.key}-${instrument.key}`} className={`border ${instrument.type === 'calculated' ? 'bg-sky-50' : 'bg-amber-50/20'}`}>
                                                     {instrument.type === 'manual' ? (
-                                                        instrument.key === 'examen1' || instrument.key === 'examen2' ? (
-                                                            <span className="p-1.5 block font-medium">
-                                                                {(() => {
-                                                                    const examInstrument = Object.values(pcInstrumentosEvaluacion).find(inst => 
-                                                                        inst.nombre?.toLowerCase() === 'examen' || inst.id?.toLowerCase() === 'examen'
-                                                                    );
-                                                                    if (!examInstrument) return '-';
-                                                                    const activitiesInPeriod = (examInstrument.activities || []).filter(a => a.trimester === period.key);
-                                                                    const activityIndex = instrument.key === 'examen1' ? 0 : 1;
-                                                                    const activity = activitiesInPeriod[activityIndex];
-                                                                    if (!activity) return '-';
-                                                                    const grades = instrumentGrades[student.id]?.[activity.id];
-                                                                    const grade = typeof grades === 'object' && grades !== null && 'normal' in grades ? grades.normal : (typeof grades === 'number' ? grades : null);
-                                                                    return grade !== null ? grade.toFixed(2) : '-';
-                                                                })()}
-                                                            </span>
-                                                        ) : (
-                                                            <input type="number" step="0.1" min="0" max="10" value={localAcademicGrades[student.id]?.[period.key]?.manualGrades?.[instrument.key] ?? ''} onChange={e => handleManualGradeChange(student.id, period.key, instrument.key, e.target.value)} className="w-16 p-1.5 text-center bg-transparent focus:bg-yellow-100 outline-none"/>
-                                                        )
+                                                        <input 
+                                                            type="number" 
+                                                            step="0.1" 
+                                                            min="0" 
+                                                            max="10" 
+                                                            value={getManualGradeDisplay(student.id, period.key, instrument.key)} 
+                                                            onChange={e => handleManualGradeChange(student.id, period.key, instrument.key, e.target.value)} 
+                                                            placeholder="-"
+                                                            title={`Nota de ${instrument.name} (${period.name}). Haz clic para escribir.`}
+                                                            className="w-16 p-1.5 text-center bg-transparent focus:bg-yellow-100 hover:bg-white border border-transparent focus:border-blue-400 hover:border-gray-300 rounded outline-none transition font-medium text-xs"
+                                                        />
                                                     ) : (<span className="p-1.5 block">{calculatedGrade !== null ? calculatedGrade.toFixed(2) : '-'}</span>)}
                                                     </td>
                                                 )}),
