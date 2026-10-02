@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { 
     Student, PracticeGroup, Service, ServiceEvaluation, ServiceRole, EntryExitRecord, 
     AcademicGrades, CourseGrades, PracticalExamEvaluation, TeacherData, InstituteData, Toast, ToastType, StudentCalculatedGrades, TrimesterDates,
@@ -88,6 +88,45 @@ const setDocWithTimeout = (docRef: any, data: any, timeoutMs: number = 8000): Pr
     });
 };
 
+// --- Offline Queue Helpers ---
+export const getOfflinePendingKeys = (): string[] => {
+    try {
+        const item = window.localStorage.getItem('offline_pending_keys');
+        return item ? JSON.parse(item) : [];
+    } catch {
+        return [];
+    }
+};
+
+export const addOfflinePendingKey = (key: string) => {
+    try {
+        const current = getOfflinePendingKeys();
+        if (!current.includes(key)) {
+            current.push(key);
+            window.localStorage.setItem('offline_pending_keys', JSON.stringify(current));
+        }
+    } catch (e) {
+        console.error("Error storing offline pending key:", e);
+    }
+};
+
+export const clearOfflinePendingKey = (key: string) => {
+    try {
+        const current = getOfflinePendingKeys().filter(k => k !== key);
+        window.localStorage.setItem('offline_pending_keys', JSON.stringify(current));
+    } catch (e) {
+        console.error("Error clearing offline pending key:", e);
+    }
+};
+
+export const clearAllOfflinePendingKeys = () => {
+    try {
+        window.localStorage.removeItem('offline_pending_keys');
+    } catch (e) {
+        console.error("Error clearing all offline pending keys:", e);
+    }
+};
+
 // --- Custom Hook for Local Storage with Offline Firestore Sync ---
 function useSyncedState<T>(key: string, initialValue: T, user: User | null, setSyncStatus?: (status: SyncStatus) => void): [T, (val: T | ((curr: T) => T)) => void, React.Dispatch<React.SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
@@ -162,6 +201,13 @@ function useSyncedState<T>(key: string, initialValue: T, user: User | null, setS
       }
       
       if (user) {
+        // Check if offline in kitchen / cold room
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          addOfflinePendingKey(key);
+          if (setSyncStatus) setSyncStatus('offline');
+          return valueToStore;
+        }
+
         if (setSyncStatus) setSyncStatus('syncing');
         try {
           setDocWithTimeout(doc(db, 'users', user.uid, 'data', key), {
@@ -169,15 +215,18 @@ function useSyncedState<T>(key: string, initialValue: T, user: User | null, setS
             updatedAt: serverTimestamp()
           })
           .then(() => {
+            clearOfflinePendingKey(key);
             if (setSyncStatus) setSyncStatus('synced');
           })
           .catch(err => {
-            console.error(`Error setting doc for key ${key}:`, err);
-            if (setSyncStatus) setSyncStatus('error');
+            console.warn(`[Modo Offline] Error setting doc for key ${key}, guardado en cola local:`, err);
+            addOfflinePendingKey(key);
+            if (setSyncStatus) setSyncStatus('offline');
           });
         } catch (syncErr) {
-          console.error(`Error síncrono al iniciar setDoc para clave ${key}:`, syncErr);
-          if (setSyncStatus) setSyncStatus('error');
+          console.warn(`[Modo Offline] Error síncrono al iniciar setDoc para clave ${key}, guardado en cola local:`, syncErr);
+          addOfflinePendingKey(key);
+          if (setSyncStatus) setSyncStatus('offline');
         }
       }
       return valueToStore;
@@ -378,6 +427,9 @@ interface AppContextType {
     
     calculatedStudentGrades: Record<string, StudentCalculatedGrades>;
     syncStatus: SyncStatus;
+    isOnline: boolean;
+    pendingOfflineCount: number;
+    flushOfflineQueue: () => Promise<void>;
     triggerManualSync: (isManual?: boolean) => Promise<void>;
 }
 
@@ -388,6 +440,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('offline');
+    const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+    const [pendingOfflineCount, setPendingOfflineCount] = useState<number>(() => getOfflinePendingKeys().length);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -452,6 +506,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const [profesores, setProfesores, setProfesoresRaw] = useSyncedState<Profesor[]>('profesores', mockProfesores, user, setSyncStatus);
     const [toasts, setToasts] = useState<Toast[]>([]);
+
+    const updatePendingOfflineCount = useCallback(() => {
+        setPendingOfflineCount(getOfflinePendingKeys().length);
+    }, []);
+
+    const flushOfflineQueue = useCallback(async () => {
+        if (!user || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+        const pendingKeys = getOfflinePendingKeys();
+        if (pendingKeys.length === 0) return;
+
+        setSyncStatus('syncing');
+        console.info(`[Modo Offline] Sincronizando ${pendingKeys.length} elementos pendientes tras reconexión...`);
+        
+        let errorOccurred = false;
+        for (const key of pendingKeys) {
+            try {
+                const item = window.localStorage.getItem(key);
+                if (item !== null) {
+                    const parsed = JSON.parse(item);
+                    await setDocWithTimeout(doc(db, 'users', user.uid, 'data', key), {
+                        data: parsed,
+                        updatedAt: serverTimestamp()
+                    });
+                    clearOfflinePendingKey(key);
+                }
+            } catch (err) {
+                console.error(`[Modo Offline] Error sincronizando clave pendiente ${key}:`, err);
+                errorOccurred = true;
+            }
+        }
+        
+        updatePendingOfflineCount();
+        if (!errorOccurred) {
+            setSyncStatus('synced');
+            addToast("¡Conexión WiFi recuperada! Todas las calificaciones y notas offline se han sincronizado con éxito.", "success");
+        } else {
+            setSyncStatus('error');
+        }
+    }, [user, updatePendingOfflineCount]);
+
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOnline(true);
+            addToast("📶 Cobertura WiFi detectada. Sincronizando datos con la nube...", "info");
+            flushOfflineQueue();
+        };
+
+        const handleOffline = () => {
+            setIsOnline(false);
+            setSyncStatus('offline');
+            addToast("📶 Modo Taller / Sin Cobertura activado: Las calificaciones y notas se guardan de forma segura en este dispositivo.", "warning");
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        // Check if there are existing pending offline items when user logs in
+        if (user && navigator.onLine && getOfflinePendingKeys().length > 0) {
+            flushOfflineQueue();
+        }
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [user, flushOfflineQueue]);
+
     const triggerManualSync = async (isManual = false) => {
         if (!user) {
             setSyncStatus('offline');
@@ -1222,6 +1343,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         calculatedStudentGrades,
         syncStatus,
+        isOnline,
+        pendingOfflineCount,
+        flushOfflineQueue,
         triggerManualSync
     };
 

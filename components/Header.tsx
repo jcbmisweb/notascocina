@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChefHatIcon, LightbulbIcon } from './icons';
 import { useAppContext } from '../context/AppContext';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   activeView?: string;
@@ -8,7 +9,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ activeView = 'pc-resumen', onOpenHelp }) => {
-  const { signOut, user, syncStatus, triggerManualSync } = useAppContext();
+  const { signOut, user, syncStatus, isOnline, pendingOfflineCount, flushOfflineQueue, triggerManualSync } = useAppContext();
   const [isIframe, setIsIframe] = React.useState(false);
 
   const getModuleTitle = () => {
@@ -33,6 +34,23 @@ const Header: React.FC<HeaderProps> = ({ activeView = 'pc-resumen', onOpenHelp }
   }, []);
 
   const getSyncBadge = () => {
+    if (!isOnline || syncStatus === 'offline') {
+      return (
+        <div 
+          className="flex items-center space-x-1.5 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200 px-3 py-1.5 rounded-full text-xs font-semibold border border-amber-300 dark:border-amber-700 shadow-xs" 
+          title="Modo Taller/Cámaras activado: Tus datos y notas están guardados de forma segura localmente en este dispositivo."
+        >
+          <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span>Modo Offline (Taller)</span>
+          {pendingOfflineCount > 0 && (
+            <span className="ml-1 bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+              {pendingOfflineCount} {pendingOfflineCount === 1 ? 'local' : 'locales'}
+            </span>
+          )}
+        </div>
+      );
+    }
+
     switch (syncStatus) {
       case 'syncing':
         return (
@@ -56,12 +74,15 @@ const Header: React.FC<HeaderProps> = ({ activeView = 'pc-resumen', onOpenHelp }
         );
       case 'error':
         return (
-          <div className="flex items-center space-x-2 bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 px-3 py-1.5 rounded-full text-xs font-semibold border border-rose-100 dark:border-rose-800 animate-bounce" title="Hubo un problema al conectar con la base de datos remota. Se mantendrán tus datos offline.">
+          <div 
+            onClick={() => flushOfflineQueue()} 
+            className="flex items-center space-x-2 bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 px-3 py-1.5 rounded-full text-xs font-semibold border border-rose-200 dark:border-rose-800 cursor-pointer hover:bg-rose-100 transition" 
+            title="Hubo un problema de conexión. Pulsa para reintentar la sincronización."
+          >
             <span className="h-2 w-2 rounded-full bg-rose-500"></span>
-            <span>Error de Sincronización</span>
+            <span>Reintentar Sincronización</span>
           </div>
         );
-      case 'offline':
       default:
         return (
           <div className="flex items-center space-x-2 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-3 py-1.5 rounded-full text-xs font-semibold border border-slate-200 dark:border-slate-700" title="Inicia sesión con Google para sincronizar tus datos en la base de datos remota.">
@@ -82,6 +103,7 @@ const Header: React.FC<HeaderProps> = ({ activeView = 'pc-resumen', onOpenHelp }
             </h1>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3">
+            <PWAInstallButton />
             {onOpenHelp && (
                 <button
                     onClick={onOpenHelp}
@@ -95,19 +117,19 @@ const Header: React.FC<HeaderProps> = ({ activeView = 'pc-resumen', onOpenHelp }
             {getSyncBadge()}
             {user && (
                 <button
-                    onClick={() => triggerManualSync(true)}
+                    onClick={() => isOnline && pendingOfflineCount > 0 ? flushOfflineQueue() : triggerManualSync(true)}
                     disabled={syncStatus === 'syncing'}
                     className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
                         syncStatus === 'syncing' 
                             ? 'bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
                             : 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60'
                     }`}
-                    title="Forzar actualización y descarga de datos desde la nube"
+                    title="Forzar actualización y sincronización de datos con la nube"
                 >
                     <svg className={`h-3.5 w-3.5 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.214 15M12 3v9l4 2" />
                     </svg>
-                    <span>Resincronizar</span>
+                    <span>{pendingOfflineCount > 0 ? `Subir (${pendingOfflineCount})` : 'Resincronizar'}</span>
                 </button>
             )}
             {user && (

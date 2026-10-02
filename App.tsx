@@ -28,6 +28,7 @@ const ProyectoEvaluacionView = lazy(() => import('./views/ProyectoEvaluacionView
 const AyudaFaqView = lazy(() => import('./views/AyudaFaqView'));
 const HelpDrawer = lazy(() => import('./components/HelpDrawer').then(m => ({ default: m.HelpDrawer })));
 import { LightbulbIcon } from './components/icons';
+import { OfflineStatusBanner } from './components/OfflineStatusBanner';
 
 
 const AppContent: React.FC = () => {
@@ -142,6 +143,7 @@ const AppContent: React.FC = () => {
                 {!(isFocusMode && activeView === 'pc-examenes-practicos') && <Sidebar activeView={activeView} setActiveView={setActiveView} />}
              </Suspense>
             <div className="flex-1 flex flex-col overflow-hidden">
+                 <OfflineStatusBanner />
                  <Suspense fallback={<div></div>}>
                     {!(isFocusMode && activeView === 'pc-examenes-practicos') && (
                         <Header activeView={activeView} onOpenHelp={() => setIsHelpOpen(true)} />
