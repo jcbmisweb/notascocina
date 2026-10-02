@@ -249,17 +249,33 @@ export const VIEW_HELP_GUIDES: Record<string, ViewHelpGuide> = {
         viewKey: 'pc-examenes-practicos',
         title: 'Exámenes Prácticos de Cocina',
         subtitle: 'Evaluación Técnica en Taller',
-        purpose: 'Evaluar en directo las pruebas prácticas de cocina mediante rúbricas (técnica, higiene, punto de cocción, emplatado, orden).',
+        purpose: 'Evaluar en directo las pruebas prácticas de cocina mediante rúbricas objetivas y subjetivas, baremo sobre 100 puntos y checklist de requisitos obligatorios.',
         whereToPutThings: [
-            'Selecciona el alumno a la izquierda.',
-            'Marca las puntuaciones en cada uno de los ítems de la rúbrica.',
-            'Usa el "Modo Foco" si estás en tablet o móvil para evaluar sin distracciones.'
+            '1º Trimestre: Conserva la rúbrica inicial por Resultados de Aprendizaje.',
+            'Examen Final (anterior 2º Trimestre): Aplica el nuevo baremo de 100 puntos (escala 0-10) con las 4 secciones y checklist.',
+            'Recuperación y Examen de Junio: Situados a continuación del Examen Final.',
+            'Botón "Descargar Ficha PDF": Genera la ficha oficial del examen del alumno para imprimir o archivar.'
         ],
         steps: [
-            { number: 1, title: 'Elegir Periodo', description: 'Selecciona 1T, 2T, 3T o Recuperación.' },
-            { number: 2, title: 'Calificar Rúbrica', description: 'Puntúa cada bloque técnico del examen.' }
+            { number: 1, title: 'Elegir Periodo', description: 'Selecciona 1º Trimestre, Examen Final, Recuperación o Examen de Junio.' },
+            { number: 2, title: 'Seleccionar Alumno', description: 'Elige al alumno en la lista lateral para cargar su ficha.' },
+            { number: 3, title: 'Calificar Criterios', description: 'Introduce la nota obtenida en cada criterio (Preparación y Presentación/Degustación).' },
+            { number: 4, title: 'Comprobar Checklist y Guardar', description: 'Verifica los métodos de cocinado, salsa, guarniciones e ingrediente obligatorio, y pulsa Guardar.' }
         ],
-        faqs: [],
+        faqs: [
+            {
+                id: 'exp-1',
+                category: 'examenes',
+                question: '¿Cómo se calcula la nota en el Examen Final?',
+                answer: 'El baremo suma hasta 100 puntos a través de 4 secciones (19 pts objetivos preparación, 21 pts subjetivos preparación, 10 pts objetivos presentación y 50 pts presentación/degustación). La nota final se calcula dividiendo la puntuación total entre 10.'
+            },
+            {
+                id: 'exp-2',
+                category: 'examenes',
+                question: '¿Qué incluye la verificación de requisitos obligatorios (Checklist)?',
+                answer: 'Verifica si el alumno ha cumplido: 3 métodos de cocinado (2 mismo género y 1 otro), salsa + 2 guarniciones en el plato principal, y el ingrediente obligatorio del curso.'
+            }
+        ],
         troubleshooting: []
     },
     'pc-exam-scheduler': {

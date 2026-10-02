@@ -180,6 +180,16 @@ export interface PracticalExamEvaluation {
         };
     };
     finalScore?: number;
+    checklist?: {
+        [key: string]: boolean;
+    };
+    headerData?: {
+        fecha?: string;
+        horaInicio?: string;
+        duracionMin?: number;
+        horaFinal?: string;
+    };
+    totalPoints100?: number;
 }
 
 export interface StudentAcademicPeriodGrades {
