@@ -17,7 +17,8 @@ import {
   FileSpreadsheetIcon,
   ChevronDownIcon,
   ChevronRightIcon as ChevronRight,
-  ClockIcon
+  ClockIcon,
+  HelpCircleIcon
 } from './icons';
 
 interface SidebarProps {
@@ -161,8 +162,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
           <ModuleSection moduleKey="proyecto" label="Proyecto" icon={BookOpenIcon} />
 
           <h3 className={`px-4 pt-4 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider ${isCollapsed ? 'hidden' : 'block'}`}>
-            Otros
+            Ayuda y Ajustes
           </h3>
+          <NavLink icon={HelpCircleIcon} label="Guía y Ayuda FAQ" isActive={activeView === 'ayuda-faq'} onClick={() => setActiveView('ayuda-faq')} isCollapsed={isCollapsed}/>
           <NavLink icon={SettingsIcon} label="Gestión App" isActive={activeView === 'gestion-app'} onClick={() => setActiveView('gestion-app')} isCollapsed={isCollapsed}/>
         </nav>
         

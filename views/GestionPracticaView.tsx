@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Service, ServiceEvaluation, Elaboration, Student, PracticeGroup, ServiceRole, TeacherData, InstituteData, Agrupacion } from '../types';
-import { PlusIcon, TrashIcon, SaveIcon, ChefHatIcon, LockClosedIcon, LockOpenIcon, FileTextIcon, ChevronDownIcon, ChevronRightIcon, UsersIcon } from '../components/icons';
+import { PlusIcon, TrashIcon, SaveIcon, ChefHatIcon, LockClosedIcon, LockOpenIcon, FileTextIcon, ChevronDownIcon, ChevronRightIcon, UsersIcon, PrinterIcon } from '../components/icons';
+import { downloadServicePlanningPdf, downloadServiceEvaluationPdf } from '../components/servicePdfUtils';
 import { useAppContext } from '../context/AppContext';
 
 const ServiceEvaluationView = lazy(() => import('./ServiceEvaluationView'));
@@ -272,6 +273,33 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
             handleSaveServiceAndEvaluation(editedService, editedEvaluation);
         }
     };
+
+    const handleDownloadPlanningPdf = () => {
+        if (!editedService) return;
+        downloadServicePlanningPdf({
+            service: editedService,
+            students,
+            practiceGroups,
+            serviceRoles,
+            teacherData,
+            instituteData
+        });
+        addToast(`PDF de Planificación descargado: "${editedService.name}"`, 'success');
+    };
+
+    const handleDownloadEvaluationPdf = () => {
+        if (!editedService || !editedEvaluation) return;
+        downloadServiceEvaluationPdf({
+            service: editedService,
+            evaluation: editedEvaluation,
+            students,
+            practiceGroups,
+            serviceRoles,
+            teacherData,
+            instituteData
+        });
+        addToast(`PDF de Evaluaciones descargado: "${editedService.name}"`, 'success');
+    };
     
     const handleToggleLock = () => {
         if (editedService && editedEvaluation) {
@@ -419,9 +447,27 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                         </div>
                     </div>
                     <div className="flex items-center space-x-2 flex-wrap gap-2">
+                        <button 
+                            type="button"
+                            onClick={handleDownloadPlanningPdf} 
+                            className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition text-xs shadow-xs active:scale-95"
+                            title="Descargar PDF con la distribución, platos y puestos de los alumnos"
+                        >
+                            <PrinterIcon className="w-4 h-4 mr-1.5" />
+                            <span>PDF Puestos y Platos</span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={handleDownloadEvaluationPdf} 
+                            className="flex items-center bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-semibold transition text-xs shadow-xs active:scale-95"
+                            title="Descargar PDF con el acta de calificaciones y evaluaciones del servicio"
+                        >
+                            <FileTextIcon className="w-4 h-4 mr-1.5" />
+                            <span>PDF Evaluaciones</span>
+                        </button>
 
-                        {!isLocked && <button onClick={handleSave} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition"><SaveIcon className="w-5 h-5 mr-1" /> Guardar</button>}
-                        {!isLocked && <button onClick={handleDelete} className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition"><TrashIcon className="w-5 h-5" /></button>}
+                        {!isLocked && <button onClick={handleSave} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition text-xs"><SaveIcon className="w-4 h-4 mr-1" /> Guardar</button>}
+                        {!isLocked && <button onClick={handleDelete} className="flex items-center bg-red-500 text-white px-3 py-2 rounded-lg font-semibold hover:bg-red-600 transition text-xs" title="Eliminar servicio"><TrashIcon className="w-4 h-4" /></button>}
                     </div>
                 </header>
 

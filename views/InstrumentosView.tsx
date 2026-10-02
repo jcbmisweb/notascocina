@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { PencilIcon, SaveIcon, PlusIcon, TrashIcon, ChevronDownIcon, ChevronRightIcon, XIcon, LockClosedIcon, LockOpenIcon, ExportIcon } from '../components/icons';
+import { PencilIcon, SaveIcon, PlusIcon, TrashIcon, ChevronDownIcon, ChevronRightIcon, XIcon, LockClosedIcon, LockOpenIcon, ExportIcon, LightbulbIcon } from '../components/icons';
 import { downloadPdfWithTables, downloadExcel } from '../components/printUtils';
 import { ExportButtons } from '../components/ExportButtons';
 import { useAppContext } from '../context/AppContext';
@@ -232,6 +232,29 @@ const GradesMatrix: React.FC<{
         });
     };
 
+    const unlockAllColumns = () => {
+        setInstrumentGrades(prev => {
+            const newGrades = { ...prev };
+            sortedStudents.forEach(student => {
+                const studentGrades = newGrades[student.id] || {};
+                instrument.activities.forEach(act => {
+                    const currentGrade = studentGrades[act.id];
+                    if (typeof currentGrade === 'object' && currentGrade !== null && 'normal' in currentGrade) {
+                        studentGrades[act.id] = {
+                            ...currentGrade,
+                            isLockedNormal: false,
+                            isLockedRec1: false,
+                            isLockedRec2: false
+                        };
+                    }
+                });
+                newGrades[student.id] = studentGrades;
+            });
+            return newGrades;
+        });
+        context.addToast('Todos los candados se han abierto. Ya puedes editar todas las notas.', 'info');
+    };
+
     const handleExport = (format: 'pdf' | 'excel') => {
         const headers = [['Alumno', ...instrument.activities.map(a => `${a.name} (T${a.trimester.toUpperCase()})`)]];
         const bodies = [sortedStudents.map(student => [
@@ -253,9 +276,24 @@ const GradesMatrix: React.FC<{
 
     return (
         <div className="overflow-x-auto">
-            <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-600 font-semibold text-xs uppercase">Desglose de Notas</span>
-                <ExportButtons onExportPdf={() => handleExport('pdf')} onExportExcel={() => handleExport('excel')} />
+            <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+                <div className="flex items-center gap-3">
+                    <span className="text-gray-700 font-bold text-xs uppercase tracking-wider">Desglose de Notas</span>
+                    {!isCalculatedInstrument && (
+                        <button 
+                            type="button"
+                            onClick={unlockAllColumns}
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-md hover:bg-emerald-100 font-semibold transition shadow-xs"
+                            title="Abre todos los candados de este instrumento para que puedas escribir en cualquier casilla"
+                        >
+                            <LockOpenIcon className="w-4 h-4 text-emerald-600" />
+                            <span>Abrir todos los candados</span>
+                        </button>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    <ExportButtons onExportPdf={() => handleExport('pdf')} onExportExcel={() => handleExport('excel')} />
+                </div>
             </div>
             <table className="min-w-full text-xs">
                 <thead className="bg-gray-200">
@@ -267,38 +305,59 @@ const GradesMatrix: React.FC<{
                     </tr>
                     <tr>
                         <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 bg-gray-200"></th>
-                        {instrument.activities.map(act => (
+                        {instrument.activities.map(act => {
+                            const isLockedNorm = sortedStudents.length > 0 && !!(instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedNormal;
+                            const isLockedR1 = sortedStudents.length > 0 && !!(instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedRec1;
+                            const isLockedR2 = sortedStudents.length > 0 && !!(instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedRec2;
+
+                            return (
                             <React.Fragment key={act.id}>
                                 <th className="p-1 border text-center">
-                                     <button onClick={() => toggleColumnLock(act.id, 'isLockedNormal')} className="focus:outline-none">
-                                        {(sortedStudents.length > 0 && (instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedNormal) ? 
+                                     <button 
+                                        type="button"
+                                        onClick={() => toggleColumnLock(act.id, 'isLockedNormal')} 
+                                        className="focus:outline-none p-1 rounded hover:bg-black/5 transition"
+                                        title={isLockedNorm ? "Candado CERRADO (Rojo): Haz clic para ABRIR y poder escribir notas" : "Candado ABIERTO (Verde): Puedes escribir notas. Haz clic para bloquear"}
+                                     >
+                                        {isLockedNorm ? 
                                             <LockClosedIcon className="w-5 h-5 text-red-600 hover:text-red-800 mx-auto" /> : 
                                             <LockOpenIcon className="w-5 h-5 text-green-600 hover:text-green-800 mx-auto" />
                                         }
                                      </button>
-                                     Nota
+                                     <span className="block text-[11px] font-semibold text-gray-700">Nota</span>
                                 </th>
                                 <th className="p-1 border text-center">
-                                    <button onClick={() => toggleColumnLock(act.id, 'isLockedRec1')} className="focus:outline-none">
-                                        {(sortedStudents.length > 0 && (instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedRec1) ? 
+                                     <button 
+                                        type="button"
+                                        onClick={() => toggleColumnLock(act.id, 'isLockedRec1')} 
+                                        className="focus:outline-none p-1 rounded hover:bg-black/5 transition"
+                                        title={isLockedR1 ? "Candado CERRADO (Rojo): Haz clic para ABRIR y escribir recuperación" : "Candado ABIERTO (Verde): Puedes escribir recuperación"}
+                                     >
+                                        {isLockedR1 ? 
                                             <LockClosedIcon className="w-5 h-5 text-red-600 hover:text-red-800 mx-auto" /> : 
                                             <LockOpenIcon className="w-5 h-5 text-green-600 hover:text-green-800 mx-auto" />
                                         }
                                      </button>
-                                     Rec 1
+                                     <span className="block text-[11px] font-semibold text-gray-700">Rec 1</span>
                                 </th>
                                 <th className="p-1 border text-center">
-                                    <button onClick={() => toggleColumnLock(act.id, 'isLockedRec2')} className="focus:outline-none">
-                                        {(sortedStudents.length > 0 && (instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedRec2) ? 
+                                     <button 
+                                        type="button"
+                                        onClick={() => toggleColumnLock(act.id, 'isLockedRec2')} 
+                                        className="focus:outline-none p-1 rounded hover:bg-black/5 transition"
+                                        title={isLockedR2 ? "Candado CERRADO (Rojo): Haz clic para ABRIR y escribir recuperación" : "Candado ABIERTO (Verde): Puedes escribir recuperación"}
+                                     >
+                                        {isLockedR2 ? 
                                             <LockClosedIcon className="w-5 h-5 text-red-600 hover:text-red-800 mx-auto" /> : 
                                             <LockOpenIcon className="w-5 h-5 text-green-600 hover:text-green-800 mx-auto" />
                                         }
                                      </button>
-                                     Rec 2
+                                     <span className="block text-[11px] font-semibold text-gray-700">Rec 2</span>
                                 </th>
-                                <th className="p-1 border text-center">Final</th>
+                                <th className="p-1 border text-center font-bold text-gray-700">Final</th>
                             </React.Fragment>
-                        ))}
+                            );
+                        })}
                     </tr>
                 </thead>
                 <tbody>
@@ -336,23 +395,56 @@ const GradesMatrix: React.FC<{
                                             {isCalculatedInstrument ? (
                                                 <span className="font-semibold text-blue-700">{calculatedGrade !== null ? calculatedGrade.toFixed(2) : '-'}</span>
                                             ) : (
-                                                <input type="number" 
-                                                       value={activityGrade.normal ?? ''} 
-                                                       onChange={e => handleGradeChange(student.id, act.id, 'normal', e.target.value)} 
-                                                       onPaste={e => handlePasteColumn(e, index, act.id, 'normal')}
-                                                       className="w-12 p-1 border rounded text-center"
-                                                       disabled={activityGrade.isLockedNormal}
-                                                />
+                                                <div 
+                                                    onClick={() => {
+                                                        if (activityGrade.isLockedNormal) {
+                                                            toggleColumnLock(act.id, 'isLockedNormal');
+                                                            context.addToast(`Candado abierto para ${act.name}. ¡Ya puedes escribir!`, 'success');
+                                                        }
+                                                    }}
+                                                    title={activityGrade.isLockedNormal ? "Columna bloqueada. Haz clic para desbloquear y poder escribir" : ""}
+                                                    className="inline-block"
+                                                >
+                                                    <input type="number" 
+                                                           value={activityGrade.normal ?? ''} 
+                                                           onChange={e => handleGradeChange(student.id, act.id, 'normal', e.target.value)} 
+                                                           onPaste={e => handlePasteColumn(e, index, act.id, 'normal')}
+                                                           className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedNormal ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`}
+                                                           disabled={activityGrade.isLockedNormal}
+                                                    />
+                                                </div>
                                             )}
                                         </td>
                                         <td className="p-1 border text-center">
                                             {!isCalculatedInstrument && (
-                                                <input type="number" value={activityGrade.rec1 ?? ''} onChange={e => handleGradeChange(student.id, act.id, 'rec1', e.target.value)} onPaste={e => handlePasteColumn(e, index, act.id, 'rec1')} className="w-12 p-1 border rounded text-center" disabled={activityGrade.isLockedRec1}/>
+                                                <div 
+                                                    onClick={() => {
+                                                        if (activityGrade.isLockedRec1) {
+                                                            toggleColumnLock(act.id, 'isLockedRec1');
+                                                            context.addToast(`Candado abierto para Rec 1. ¡Ya puedes escribir!`, 'success');
+                                                        }
+                                                    }}
+                                                    title={activityGrade.isLockedRec1 ? "Columna bloqueada. Haz clic para desbloquear" : ""}
+                                                    className="inline-block"
+                                                >
+                                                    <input type="number" value={activityGrade.rec1 ?? ''} onChange={e => handleGradeChange(student.id, act.id, 'rec1', e.target.value)} onPaste={e => handlePasteColumn(e, index, act.id, 'rec1')} className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedRec1 ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`} disabled={activityGrade.isLockedRec1}/>
+                                                </div>
                                             )}
                                         </td>
                                         <td className="p-1 border text-center">
                                             {!isCalculatedInstrument && (
-                                                <input type="number" value={activityGrade.rec2 ?? ''} onChange={e => handleGradeChange(student.id, act.id, 'rec2', e.target.value)} onPaste={e => handlePasteColumn(e, index, act.id, 'rec2')} className="w-12 p-1 border rounded text-center" disabled={activityGrade.isLockedRec2}/>
+                                                <div 
+                                                    onClick={() => {
+                                                        if (activityGrade.isLockedRec2) {
+                                                            toggleColumnLock(act.id, 'isLockedRec2');
+                                                            context.addToast(`Candado abierto para Rec 2. ¡Ya puedes escribir!`, 'success');
+                                                        }
+                                                    }}
+                                                    title={activityGrade.isLockedRec2 ? "Columna bloqueada. Haz clic para desbloquear" : ""}
+                                                    className="inline-block"
+                                                >
+                                                    <input type="number" value={activityGrade.rec2 ?? ''} onChange={e => handleGradeChange(student.id, act.id, 'rec2', e.target.value)} onPaste={e => handlePasteColumn(e, index, act.id, 'rec2')} className={`w-12 p-1 border rounded text-center transition ${activityGrade.isLockedRec2 ? 'bg-red-50/70 border-red-300 text-gray-500 cursor-pointer' : 'bg-white border-gray-300'}`} disabled={activityGrade.isLockedRec2}/>
+                                                </div>
                                             )}
                                         </td>
                                         <td className="p-2 border text-center font-bold">{(isCalculatedInstrument ? (calculatedGrade !== null) : (finalGrade > 0)) ? finalGrade.toFixed(2) : '-'}</td>
@@ -446,6 +538,20 @@ const InstrumentosView: React.FC<InstrumentosViewProps> = ({ module }) => {
                     </button>
                 </div>
             </header>
+
+            {/* Info Banner for Exams & Locks */}
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-6 text-xs text-amber-950 flex items-start gap-3 shadow-xs">
+                <div className="p-2 bg-amber-200/90 rounded-lg text-amber-900 flex-shrink-0 mt-0.5">
+                    <LightbulbIcon className="w-5 h-5 text-amber-900" />
+                </div>
+                <div className="space-y-1">
+                    <span className="font-bold text-sm text-amber-950 block">💡 ¿Dónde poner las notas de exámenes teóricos y cómo funcionan los candados?</span>
+                    <p className="text-amber-900 leading-relaxed">
+                        Haz clic sobre el instrumento <b>"Examen"</b> en la lista inferior para desplegar la tabla de notas.
+                        Por defecto, los <b>candados están abiertos (icono verde 🔓)</b> para que puedas escribir sin obstáculos. Si alguna columna estuviese bloqueada (candado rojo 🔒), haz clic sobre el candado en la cabecera o directamente sobre la casilla para abrirlo al instante.
+                    </p>
+                </div>
+            </div>
 
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                 <table className="min-w-full text-sm">

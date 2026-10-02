@@ -23,11 +23,15 @@ const ModuleDashboardView = lazy(() => import('./views/ModuleDashboardView'));
 const ExamSchedulerView = lazy(() => import('./views/ExamSchedulerView'));
 const CoevaluacionDiabolicaView = lazy(() => import('./views/CoevaluacionDiabolicaView'));
 const DefinirGruposProyectoView = lazy(() => import('./views/DefinirGruposProyectoView'));
+const AyudaFaqView = lazy(() => import('./views/AyudaFaqView'));
+const HelpDrawer = lazy(() => import('./components/HelpDrawer').then(m => ({ default: m.HelpDrawer })));
+import { LightbulbIcon } from './components/icons';
 
 
 const AppContent: React.FC = () => {
     // --- VIEW & NAVIGATION STATE ---
     const [activeView, setActiveView] = useState('dashboard');
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
     const [initialServiceId, setInitialServiceId] = useState<string | null>(null);
     const [initialServiceTab, setInitialServiceTab] = useState<'planning' | 'evaluation' | null>(null);
     const [isFocusMode, setIsFocusMode] = useState(false);
@@ -112,6 +116,8 @@ const AppContent: React.FC = () => {
 
             case 'gestion-app':
                 return <GestionAppView />;
+            case 'ayuda-faq':
+                return <AyudaFaqView onNavigate={setActiveView} />;
             default:
                 return <DashboardView onNavigate={setActiveView} />;
         }
@@ -124,14 +130,16 @@ const AppContent: React.FC = () => {
       : 'flex-1 p-6 sm:p-8 overflow-y-auto bg-gray-50';
 
     return (
-        <div className="flex h-screen bg-gray-100 font-sans">
+        <div className="flex h-screen bg-gray-100 font-sans relative">
              <ToastContainer toasts={toasts} />
              <Suspense fallback={<div></div>}>
                 {!(isFocusMode && activeView === 'pc-examenes-practicos') && <Sidebar activeView={activeView} setActiveView={setActiveView} />}
              </Suspense>
             <div className="flex-1 flex flex-col overflow-hidden">
                  <Suspense fallback={<div></div>}>
-                    {!(isFocusMode && activeView === 'pc-examenes-practicos') && <Header activeView={activeView} />}
+                    {!(isFocusMode && activeView === 'pc-examenes-practicos') && (
+                        <Header activeView={activeView} onOpenHelp={() => setIsHelpOpen(true)} />
+                    )}
                  </Suspense>
                 <main className={mainContentClass}>
                     <Suspense fallback={<LoadingFallback />}>
@@ -139,6 +147,28 @@ const AppContent: React.FC = () => {
                     </Suspense>
                 </main>
             </div>
+
+            {/* Quick Floating Help Lightbulb Button */}
+            {!(isFocusMode && activeView === 'pc-examenes-practicos') && (
+                <button
+                    onClick={() => setIsHelpOpen(true)}
+                    className="fixed bottom-5 right-5 z-40 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-white p-3 sm:px-4 sm:py-2.5 rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:scale-105 flex items-center gap-2 border-2 border-white/60 active:scale-95"
+                    title="💡 Guía rápida y preguntas frecuentes de esta pantalla"
+                >
+                    <LightbulbIcon className="w-5 h-5 text-yellow-200 animate-pulse" />
+                    <span className="hidden sm:inline text-xs font-bold tracking-wide">¿Dudas con esta pantalla?</span>
+                </button>
+            )}
+
+            {/* Contextual Help Drawer */}
+            <Suspense fallback={null}>
+                <HelpDrawer
+                    isOpen={isHelpOpen}
+                    onClose={() => setIsHelpOpen(false)}
+                    activeView={activeView}
+                    onNavigateToFaq={() => setActiveView('ayuda-faq')}
+                />
+            </Suspense>
         </div>
     );
 };

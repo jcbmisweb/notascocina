@@ -1,12 +1,13 @@
 import React from 'react';
-import { ChefHatIcon } from './icons';
+import { ChefHatIcon, LightbulbIcon } from './icons';
 import { useAppContext } from '../context/AppContext';
 
 interface HeaderProps {
   activeView?: string;
+  onOpenHelp?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ activeView = 'pc-resumen' }) => {
+const Header: React.FC<HeaderProps> = ({ activeView = 'pc-resumen', onOpenHelp }) => {
   const { signOut, user, syncStatus, triggerManualSync } = useAppContext();
   const [isIframe, setIsIframe] = React.useState(false);
 
@@ -81,6 +82,16 @@ const Header: React.FC<HeaderProps> = ({ activeView = 'pc-resumen' }) => {
             </h1>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3">
+            {onOpenHelp && (
+                <button
+                    onClick={onOpenHelp}
+                    className="flex items-center space-x-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm hover:shadow active:scale-95"
+                    title="Abre la guía paso a paso y preguntas frecuentes de esta pantalla"
+                >
+                    <LightbulbIcon className="w-4 h-4 text-white" />
+                    <span>💡 Guía de esta pantalla</span>
+                </button>
+            )}
             {getSyncBadge()}
             {user && (
                 <button
