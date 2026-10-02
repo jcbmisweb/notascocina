@@ -206,6 +206,9 @@ export interface PracticalExamEvaluation {
         horaInicio?: string;
         duracionMin?: number;
         horaFinal?: string;
+        timerStartTime?: number | null;
+        timerRemainingSeconds?: number | null;
+        timerStatus?: 'idle' | 'running' | 'paused' | 'finished';
     };
     totalPoints100?: number;
 }

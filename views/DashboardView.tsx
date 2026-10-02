@@ -8,6 +8,8 @@ import {
     ClipboardCheckIcon,
     SettingsIcon,
     PencilIcon,
+    RefreshCwIcon,
+    ChefHatIcon,
     ClipboardListIcon as GestionAcademicaIcon
 } from '../components/icons';
 import FileUpload from '../components/FileUpload';
@@ -58,9 +60,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <p className="text-gray-500 mt-1">Aquí tienes un resumen rápido de tu espacio de trabajo.</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 <StatCard icon={UsersIcon} title="Total Alumnos" value={students.length} color="#3b82f6" />
-                <StatCard icon={GroupIcon} title="Grupos Definidos" value={practiceGroups.length} color="#10b981" />
+                <StatCard icon={GroupIcon} title="Grupos de Práctica" value={practiceGroups.length} color="#10b981" />
+                <StatCard icon={RefreshCwIcon} title="Rotación Brigada" value="Equitativa" color="#059669" />
                 <StatCard icon={ClipboardListIcon} title="Servicios Planificados" value={services.length} color="#f59e0b" />
             </div>
 
@@ -69,9 +72,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Acciones Rápidas</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <ActionCard icon={PencilIcon} title="Exámenes Teóricos" description="Poner notas teóricas rápidamente" onClick={() => setIsExamModalOpen(true)} color="#2563eb" />
+                        <ActionCard icon={RefreshCwIcon} title="Rotación Brigada" description="Matriz equitativa y sugerencias" onClick={() => onNavigate('pc-rotacion-brigada')} color="#059669" />
+                        <ActionCard icon={ChefHatIcon} title="Modo Tablet / Examen" description="Evaluación en directo y cronómetro" onClick={() => onNavigate('pc-examenes-practicos')} color="#dc2626" />
+                        <ActionCard icon={CalendarPlusIcon} title="Planificar Servicios" description="Organiza las clases prácticas" onClick={() => onNavigate('pc-gestion-practica')} color="#f59e0b" />
                         <ActionCard icon={GestionAcademicaIcon} title="Gestión Académica" description="Centraliza todas las notas" onClick={() => onNavigate('gestion-academica')} color="#8b5cf6" />
                         <ActionCard icon={UsersIcon} title="Evaluación Proyecto" description="Notas grupales e individuales" onClick={() => onNavigate('proyecto-evaluacion')} color="#7c3aed" />
-                        <ActionCard icon={CalendarPlusIcon} title="Planificar Servicios" description="Organiza las clases prácticas" onClick={() => onNavigate('gestion-practica')} color="#f59e0b" />
                         <ActionCard icon={UsersIcon} title="Gestionar Alumnos" description="Visualiza y edita las fichas" onClick={() => onNavigate('alumnos')} color="#3b82f6" />
                         <ActionCard icon={SettingsIcon} title="Ajustes y Backups" description="Configura y guarda tus datos" onClick={() => onNavigate('gestion-app')} color="#6b7280" />
                     </div>

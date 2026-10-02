@@ -23,6 +23,7 @@ const ModuleDashboardView = lazy(() => import('./views/ModuleDashboardView'));
 const ExamSchedulerView = lazy(() => import('./views/ExamSchedulerView'));
 const CoevaluacionDiabolicaView = lazy(() => import('./views/CoevaluacionDiabolicaView'));
 const DefinirGruposProyectoView = lazy(() => import('./views/DefinirGruposProyectoView'));
+const RotacionBrigadaView = lazy(() => import('./views/RotacionBrigadaView').then(m => ({ default: m.RotacionBrigadaView })));
 const ProyectoEvaluacionView = lazy(() => import('./views/ProyectoEvaluacionView').then(m => ({ default: m.ProyectoEvaluacionView })));
 const AyudaFaqView = lazy(() => import('./views/AyudaFaqView'));
 const HelpDrawer = lazy(() => import('./components/HelpDrawer').then(m => ({ default: m.HelpDrawer })));
@@ -86,6 +87,8 @@ const AppContent: React.FC = () => {
                     initialServiceTab={initialServiceTab}
                     clearInitialServiceContext={clearInitialServiceContext}
                 />;
+            case 'pc-rotacion-brigada':
+                return <RotacionBrigadaView />;
             case 'pc-examenes-practicos':
                 return <ExamenesPracticosView isFocusMode={isFocusMode} setIsFocusMode={setIsFocusMode} />;
             case 'pc-exam-scheduler':

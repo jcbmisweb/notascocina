@@ -126,6 +126,8 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                     ) : (
                         <>
                             <ActionCard icon={PencilIcon} title="Notas Exámenes Teóricos" description="Acceso rápido para calificar exámenes teóricos sin candados" onClick={() => setIsExamModalOpen(true)} color="#2563eb" />
+                            <ActionCard icon={RefreshCwIcon} title="Rotación de Brigada" description="Cuadrante automático y sugerencias de puestos equitativos" onClick={() => onNavigate('pc-rotacion-brigada')} color="#059669" />
+                            <ActionCard icon={ChefHatIcon} title="Gestión Práctica" description="Planifica servicios, elaboraciones y temporizador de pase" onClick={() => onNavigate('pc-gestion-practica')} color="#d97706" />
                             <ActionCard icon={FileTextIcon} title="Gestionar RAs y Criterios" description="Define los resultados de aprendizaje" onClick={() => onNavigate(`${module}-ra`)} color="#8b5cf6" />
                             <ActionCard icon={BookOpenIcon} title="Gestionar Unidades de Trabajo" description="Organiza las unidades didácticas" onClick={() => onNavigate(`${module}-ut`)} color="#10b981" />
                             <ActionCard icon={PencilIcon} title="Gestionar Instrumentos" description="Configura los instrumentos de evaluación" onClick={() => onNavigate(`${module}-instrumentos`)} color="#f59e0b" />

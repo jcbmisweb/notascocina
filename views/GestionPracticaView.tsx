@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Service, ServiceEvaluation, Elaboration, Student, PracticeGroup, ServiceRole, TeacherData, InstituteData, Agrupacion } from '../types';
 import { PlusIcon, TrashIcon, SaveIcon, ChefHatIcon, LockClosedIcon, LockOpenIcon, FileTextIcon, ChevronDownIcon, ChevronRightIcon, UsersIcon, PrinterIcon } from '../components/icons';
 import { downloadServicePlanningPdf, downloadServiceEvaluationPdf } from '../components/servicePdfUtils';
+import { ServiceCountdownTimer } from '../components/ServiceCountdownTimer';
+import { RotacionBrigadaView } from './RotacionBrigadaView';
 import { useAppContext } from '../context/AppContext';
 
 const ServiceEvaluationView = lazy(() => import('./ServiceEvaluationView'));
@@ -222,12 +224,85 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
     const [mainTab, setMainTab] = useState<'planning' | 'evaluation'>('planning');
     const [planningSubTab, setPlanningSubTab] = useState('distribucion');
     const [agrupacionPlanningSubTab, setAgrupacionPlanningSubTab] = useState('elaboraciones');
+    const [isRotationModalOpen, setIsRotationModalOpen] = useState(false);
     const [newElaboration, setNewElaboration] = useState({
         comedor: { name: '', responsibleGroupId: '' },
         takeaway: { name: '', responsibleGroupId: '' }
     });
 
     const [collapsedTrimesters, setCollapsedTrimesters] = useState<Set<string>>(new Set());
+
+    // Compute historical role counts for each student across all other services
+    const studentRoleHistory = useMemo(() => {
+        const counts: Record<string, Record<string, number>> = {};
+        students.forEach(st => {
+            counts[st.id] = {};
+            serviceRoles.forEach(r => { counts[st.id][r.id] = 0; });
+        });
+
+        services.forEach(srv => {
+            if (srv.id === editedService?.id) return;
+            (srv.studentRoles || []).forEach(a => {
+                if (counts[a.studentId] && counts[a.studentId][a.roleId] !== undefined) {
+                    counts[a.studentId][a.roleId] += 1;
+                }
+            });
+        });
+        return counts;
+    }, [students, serviceRoles, services, editedService?.id]);
+
+    // Smart Equitable Auto-Assign Roles
+    const handleSmartAutoAssignRoles = () => {
+        if (!editedService || editedService.isLocked) return;
+        
+        let targetStudents: Student[] = [];
+        if (editedService.type === 'agrupacion') {
+            const studentIds = (editedService.agrupaciones || []).flatMap(a => a.studentIds);
+            targetStudents = students.filter(s => studentIds.includes(s.id));
+        } else {
+            const assignedGroupIds = [...editedService.assignedGroups.comedor, ...editedService.assignedGroups.takeaway];
+            const assignedGroups = practiceGroups.filter(g => assignedGroupIds.includes(g.id));
+            const studentIds = assignedGroups.flatMap(g => g.studentIds);
+            targetStudents = students.filter(s => studentIds.includes(s.id));
+        }
+
+        if (targetStudents.length === 0) {
+            addToast('Asigna primero grupos o elaboraciones al servicio.', 'warning');
+            return;
+        }
+
+        const jefeRole = serviceRoles.find(r => r.name.toLowerCase().includes('jefe de cocina')) || serviceRoles[0];
+        const segundoRole = serviceRoles.find(r => r.name.toLowerCase().includes('segundo')) || serviceRoles[1];
+        const secondaryRolesList = serviceRoles.filter(r => r.id !== jefeRole?.id && r.id !== segundoRole?.id);
+
+        const availableStudents = [...targetStudents];
+        const newStudentRoles: { studentId: string; roleId: string }[] = [];
+
+        // 1. Assign Jefe de Cocina to candidate with fewest times as Jefe
+        if (jefeRole && availableStudents.length > 0) {
+            availableStudents.sort((a, b) => (studentRoleHistory[a.id]?.[jefeRole.id] || 0) - (studentRoleHistory[b.id]?.[jefeRole.id] || 0));
+            const jefeStudent = availableStudents.shift()!;
+            newStudentRoles.push({ studentId: jefeStudent.id, roleId: jefeRole.id });
+        }
+
+        // 2. Assign Segundo de Cocina to candidate with fewest times as Segundo
+        if (segundoRole && availableStudents.length > 0) {
+            availableStudents.sort((a, b) => (studentRoleHistory[a.id]?.[segundoRole.id] || 0) - (studentRoleHistory[b.id]?.[segundoRole.id] || 0));
+            const segundoStudent = availableStudents.shift()!;
+            newStudentRoles.push({ studentId: segundoStudent.id, roleId: segundoRole.id });
+        }
+
+        // 3. Assign remaining students to secondary roles equitably
+        availableStudents.forEach((st, idx) => {
+            const assignedRole = secondaryRolesList[idx % secondaryRolesList.length] || serviceRoles[serviceRoles.length - 1];
+            if (assignedRole) {
+                newStudentRoles.push({ studentId: st.id, roleId: assignedRole.id });
+            }
+        });
+
+        setEditedService(prev => prev ? { ...prev, studentRoles: newStudentRoles } : null);
+        addToast('🪄 Puestos asignados equitativamente según historial de rotación.', 'success');
+    };
 
 
     useEffect(() => {
@@ -449,6 +524,15 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                     <div className="flex items-center space-x-2 flex-wrap gap-2">
                         <button 
                             type="button"
+                            onClick={() => setIsRotationModalOpen(true)}
+                            className="flex items-center bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg font-semibold transition text-xs shadow-xs active:scale-95"
+                            title="Ver matriz de rotación de brigada y puestos"
+                        >
+                            <ChefHatIcon className="w-4 h-4 mr-1.5" />
+                            <span>Matriz de Rotación</span>
+                        </button>
+                        <button 
+                            type="button"
                             onClick={handleDownloadPlanningPdf} 
                             className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition text-xs shadow-xs active:scale-95"
                             title="Descargar PDF con la distribución, platos y puestos de los alumnos"
@@ -470,6 +554,13 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                         {!isLocked && <button onClick={handleDelete} className="flex items-center bg-red-500 text-white px-3 py-2 rounded-lg font-semibold hover:bg-red-600 transition text-xs" title="Eliminar servicio"><TrashIcon className="w-4 h-4" /></button>}
                     </div>
                 </header>
+
+                <div className="mb-6">
+                    <ServiceCountdownTimer
+                        serviceName={editedService.name}
+                        targetTimeStr="14:00"
+                    />
+                </div>
 
                 <div className="mb-6 p-4 bg-white rounded-lg shadow-sm border">
                     <h4 className="text-md font-bold text-gray-700 mb-3">Puestos Principales del Servicio</h4>

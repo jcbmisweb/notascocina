@@ -18,7 +18,8 @@ import {
   ChevronDownIcon,
   ChevronRightIcon as ChevronRight,
   ClockIcon,
-  HelpCircleIcon
+  HelpCircleIcon,
+  RefreshCwIcon
 } from './icons';
 
 interface SidebarProps {
@@ -118,6 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
                 <>
                     <NavLink icon={GroupIcon} label="Definir Grupos" isActive={activeView === 'pc-definir-grupos'} onClick={() => setActiveView('pc-definir-grupos')} isCollapsed={isCollapsed} isSubItem />
                     <NavLink icon={ChefHatIcon} label="Gestión Práctica" isActive={activeView === 'pc-gestion-practica'} onClick={() => setActiveView('pc-gestion-practica')} isCollapsed={isCollapsed} isSubItem />
+                    <NavLink icon={RefreshCwIcon} label="Rotación Brigada" isActive={activeView === 'pc-rotacion-brigada'} onClick={() => setActiveView('pc-rotacion-brigada')} isCollapsed={isCollapsed} isSubItem />
                     <NavLink icon={PencilRulerIcon} label="Exámenes Prácticos" isActive={activeView === 'pc-examenes-practicos'} onClick={() => setActiveView('pc-examenes-practicos')} isCollapsed={isCollapsed} isSubItem />
                     <NavLink icon={ClipboardCheckIcon} label="Resumen Servicios" isActive={activeView === 'pc-calificaciones'} onClick={() => setActiveView('pc-calificaciones')} isCollapsed={isCollapsed} isSubItem />
                     <NavLink icon={ArrowRightLeftIcon} label="Salidas/Entradas" isActive={activeView === 'pc-salidas-entradas'} onClick={() => setActiveView('pc-salidas-entradas')} isCollapsed={isCollapsed} isSubItem />

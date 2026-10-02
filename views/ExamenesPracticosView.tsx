@@ -4,6 +4,8 @@ import { PRACTICAL_EXAM_RUBRIC, SCORE_LEVELS } from '../data/constants';
 import { FINAL_EXAM_SECTIONS, FINAL_EXAM_CHECKLIST } from '../data/examFinalRubric';
 import { downloadFinalPracticalExamPdf } from '../components/practicalExamPdfUtils';
 import { SearchIcon, SaveIcon, PrinterIcon, FileTextIcon } from '../components/icons';
+import { CookingCountdownTimer } from '../components/ExamenPractico/CookingCountdownTimer';
+import { TabletModeView } from '../components/ExamenPractico/TabletModeView';
 import { useAppContext } from '../context/AppContext';
 
 interface ExamenesPracticosViewProps {
@@ -25,6 +27,21 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentEvaluation, setCurrentEvaluation] = useState<PracticalExamEvaluation | null>(null);
+    const [isTabletModeOpen, setIsTabletModeOpen] = useState(false);
+
+    const handleUpdateHeaderData = (updates: any) => {
+        if (!currentEvaluation) return;
+        setCurrentEvaluation(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                headerData: {
+                    ...(prev.headerData || {}),
+                    ...updates,
+                }
+            };
+        });
+    };
 
     const currentPeriodConfig = useMemo(() => {
         return PERIODS.find(p => p.key === activePeriod) || PERIODS[0];
@@ -196,67 +213,97 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
     };
 
     // Render for classic T1 rubric
-    const renderT1Rubric = (student: Student) => (
-        <div className="p-4 sm:p-6 h-full flex flex-col">
-            <header className="flex flex-wrap justify-between items-center gap-4 mb-4 pb-4 border-b">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-800">Evaluando a: {student?.nombre} {student?.apellido1} {student?.apellido2}</h2>
-                    <p className="text-sm text-gray-500">Rúbrica de Criterios (1º Trimestre)</p>
-                </div>
-                <div className="text-right bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
-                    <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Nota Final</p>
-                    <p className="text-3xl font-bold text-blue-700">{finalPointsData.scale10.toFixed(2)}</p>
-                </div>
-            </header>
-            <div className="flex-1 overflow-y-auto pr-2 space-y-6">
-                {PRACTICAL_EXAM_RUBRIC.map(ra => (
-                    <div key={ra.id} className="bg-white p-4 rounded-xl shadow-xs border border-gray-200">
-                        <h3 className="font-bold text-base mb-3 text-gray-800 flex items-center justify-between">
-                            <span>{ra.name}</span>
-                            <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{ra.weight * 100}%</span>
-                        </h3>
-                        <div className="space-y-4">
-                            {ra.criteria.map(criterion => {
-                                const currentScoreData = currentEvaluation?.scores?.[ra.id]?.[criterion.id];
-                                return (
-                                    <div key={criterion.id} className="border-t border-gray-100 pt-3">
-                                        <p className="font-semibold text-xs text-gray-700 mb-2">{criterion.name}</p>
-                                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                                            {SCORE_LEVELS.map(level => (
-                                                <button key={level.value}
-                                                    type="button"
-                                                    onClick={() => handleScoreChange(ra.id, criterion.id, level.value, null)}
-                                                    className={`px-3 py-1 text-xs text-white rounded-md transition-transform transform hover:scale-105 ${level.color} ${currentScoreData?.score === level.value ? 'ring-2 ring-offset-1 ring-black' : ''} ${currentScoreData?.score !== null && currentScoreData?.score !== level.value ? 'opacity-60' : ''}`}
-                                                >
-                                                    {level.label} ({level.value})
-                                                </button>
-                                            ))}
-                                            {currentScoreData?.score !== null && (
-                                                <button type="button" onClick={() => handleScoreChange(ra.id, criterion.id, null, null)} className="text-xs text-gray-400 hover:text-red-500 ml-2">Limpiar</button>
-                                            )}
-                                        </div>
-                                        <textarea
-                                            placeholder="Anotaciones técnicas..."
-                                            value={currentScoreData?.notes || ''}
-                                            onChange={(e) => handleScoreChange(ra.id, criterion.id, null, e.target.value)}
-                                            className="w-full p-2 text-xs border rounded-md mt-1 bg-gray-50 focus:bg-white"
-                                            rows={2}
-                                        />
-                                    </div>
-                                );
-                            })}
+    const renderT1Rubric = (student: Student) => {
+        const headerData = currentEvaluation?.headerData || {};
+
+        return (
+            <div className="p-4 sm:p-6 h-full flex flex-col">
+                <header className="flex flex-wrap justify-between items-center gap-4 mb-4 pb-4 border-b bg-white p-4 rounded-2xl shadow-xs">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">Evaluando a: {student?.nombre} {student?.apellido1} {student?.apellido2}</h2>
+                        <p className="text-sm text-gray-500">Rúbrica de Criterios (1º Trimestre)</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsTabletModeOpen(true)}
+                            className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                            title="Abrir vista táctil optimizada para tablet con botones grandes"
+                        >
+                            <span>📱</span>
+                            <span>Modo Tablet en Partida</span>
+                        </button>
+                        <div className="text-right bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
+                            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Nota Final</p>
+                            <p className="text-3xl font-bold text-blue-700">{finalPointsData.scale10.toFixed(2)}</p>
                         </div>
                     </div>
-                ))}
+                </header>
+
+                {/* Interactive Countdown Timer */}
+                <div className="mb-4">
+                    <CookingCountdownTimer
+                        duracionMin={headerData.duracionMin || 90}
+                        horaInicio={headerData.horaInicio || '08:15'}
+                        horaFinal={headerData.horaFinal || '09:45'}
+                        timerStartTime={headerData.timerStartTime}
+                        timerStatus={headerData.timerStatus || 'idle'}
+                        timerRemainingSeconds={headerData.timerRemainingSeconds}
+                        studentName={`${student?.nombre} ${student?.apellido1}`}
+                        onUpdateHeaderData={handleUpdateHeaderData}
+                    />
+                </div>
+
+                <div className="flex-1 overflow-y-auto pr-2 space-y-6">
+                    {PRACTICAL_EXAM_RUBRIC.map(ra => (
+                        <div key={ra.id} className="bg-white p-4 rounded-xl shadow-xs border border-gray-200">
+                            <h3 className="font-bold text-base mb-3 text-gray-800 flex items-center justify-between">
+                                <span>{ra.name}</span>
+                                <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{ra.weight * 100}%</span>
+                            </h3>
+                            <div className="space-y-4">
+                                {ra.criteria.map(criterion => {
+                                    const currentScoreData = currentEvaluation?.scores?.[ra.id]?.[criterion.id];
+                                    return (
+                                        <div key={criterion.id} className="border-t border-gray-100 pt-3">
+                                            <p className="font-semibold text-xs text-gray-700 mb-2">{criterion.name}</p>
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                {SCORE_LEVELS.map(level => (
+                                                    <button key={level.value}
+                                                        type="button"
+                                                        onClick={() => handleScoreChange(ra.id, criterion.id, level.value, null)}
+                                                        className={`px-3 py-1 text-xs text-white rounded-md transition-transform transform hover:scale-105 ${level.color} ${currentScoreData?.score === level.value ? 'ring-2 ring-offset-1 ring-black' : ''} ${currentScoreData?.score !== null && currentScoreData?.score !== level.value ? 'opacity-60' : ''}`}
+                                                    >
+                                                        {level.label} ({level.value})
+                                                    </button>
+                                                ))}
+                                                {currentScoreData?.score !== null && (
+                                                    <button type="button" onClick={() => handleScoreChange(ra.id, criterion.id, null, null)} className="text-xs text-gray-400 hover:text-red-500 ml-2">Limpiar</button>
+                                                )}
+                                            </div>
+                                            <textarea
+                                                placeholder="Anotaciones técnicas..."
+                                                value={currentScoreData?.notes || ''}
+                                                onChange={(e) => handleScoreChange(ra.id, criterion.id, null, e.target.value)}
+                                                className="w-full p-2 text-xs border rounded-md mt-1 bg-gray-50 focus:bg-white"
+                                                rows={2}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <footer className="pt-4 mt-4 border-t flex gap-3">
+                    <button type="button" onClick={handleSaveEvaluation} className="flex-1 flex items-center justify-center bg-green-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-green-700 transition shadow-sm">
+                        <SaveIcon className="w-5 h-5 mr-2" />
+                        Guardar Examen
+                    </button>
+                </footer>
             </div>
-            <footer className="pt-4 mt-4 border-t flex gap-3">
-                <button type="button" onClick={handleSaveEvaluation} className="flex-1 flex items-center justify-center bg-green-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-green-700 transition shadow-sm">
-                    <SaveIcon className="w-5 h-5 mr-2" />
-                    Guardar Examen
-                </button>
-            </footer>
-        </div>
-    );
+        );
+    };
 
     // Render for the new 100-point Examen Final rubric & checklist
     const renderFinalExamRubric = (student: Student) => {
@@ -275,6 +322,15 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsTabletModeOpen(true)}
+                            className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                            title="Abrir vista táctil optimizada para tablet con botones grandes"
+                        >
+                            <span>📱</span>
+                            <span>Modo Tablet en Partida</span>
+                        </button>
                         <div className="text-right bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl">
                             <span className="text-[10px] font-bold text-slate-500 uppercase block">Puntuación</span>
                             <span className="text-xl font-bold text-slate-800">{finalPointsData.total100.toFixed(1)} <span className="text-xs text-slate-400 font-normal">/ 100</span></span>
@@ -286,48 +342,18 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
                     </div>
                 </header>
 
-                {/* Exam Meta Info Bar (Fecha, Hora inicio, Duración, Hora fin) */}
-                <div className="bg-white border border-gray-200 rounded-xl p-3 mb-4 shadow-2xs grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Fecha del Examen</label>
-                        <input
-                            type="text"
-                            value={headerData.fecha || '15/09/2026'}
-                            onChange={e => handleHeaderDataChange('fecha', e.target.value)}
-                            placeholder="DD/MM/AAAA"
-                            className="w-full p-1.5 border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Hora de Inicio</label>
-                        <input
-                            type="text"
-                            value={headerData.horaInicio || '08:15'}
-                            onChange={e => handleHeaderDataChange('horaInicio', e.target.value)}
-                            className="w-full p-1.5 border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Hora Final</label>
-                        <input
-                            type="text"
-                            value={headerData.horaFinal || '09:45'}
-                            onChange={e => handleHeaderDataChange('horaFinal', e.target.value)}
-                            className="w-full p-1.5 border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Duración Total</label>
-                        <div className="flex items-center gap-1.5">
-                            <input
-                                type="number"
-                                value={headerData.duracionMin || 90}
-                                onChange={e => handleHeaderDataChange('duracionMin', parseInt(e.target.value) || 0)}
-                                className="w-20 p-1.5 border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-blue-500 text-center"
-                            />
-                            <span className="text-gray-500 font-semibold">min</span>
-                        </div>
-                    </div>
+                {/* Interactive Countdown Timer & Kitchen Clock */}
+                <div className="mb-4">
+                    <CookingCountdownTimer
+                        duracionMin={headerData.duracionMin || 90}
+                        horaInicio={headerData.horaInicio || '08:15'}
+                        horaFinal={headerData.horaFinal || '09:45'}
+                        timerStartTime={headerData.timerStartTime}
+                        timerStatus={headerData.timerStatus || 'idle'}
+                        timerRemainingSeconds={headerData.timerRemainingSeconds}
+                        studentName={`${student?.nombre} ${student?.apellido1}`}
+                        onUpdateHeaderData={handleUpdateHeaderData}
+                    />
                 </div>
 
                 {/* Rubric Content */}
@@ -565,6 +591,17 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
                     <div className="flex items-center justify-between">
                         <h1 className="text-lg font-extrabold text-gray-800">Exámenes Prácticos</h1>
                     </div>
+
+                    {/* Quick Launch Tablet Mode Button */}
+                    <button
+                        type="button"
+                        onClick={() => setIsTabletModeOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-black text-xs rounded-xl shadow-md transition active:scale-98 cursor-pointer"
+                    >
+                        <span>📱</span>
+                        <span>Abrir Modo Tablet en Partida</span>
+                    </button>
+
                     {/* Period Tabs in exact order requested */}
                     <div className="grid grid-cols-2 gap-1.5 bg-gray-100 p-1.5 rounded-xl">
                         {PERIODS.map(period => (
@@ -605,6 +642,8 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
                     {filteredStudents.map(student => {
                         const isEvaluated = evaluatedStudents.has(student.id);
                         const isSelected = selectedStudentId === student.id;
+                        const stEval = practicalExamEvaluations.find(e => e.studentId === student.id && e.examPeriod === activePeriod);
+                        const isCooking = stEval?.headerData?.timerStatus === 'running';
 
                         return (
                             <button
@@ -630,9 +669,16 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
                                         {student.apellido1} {student.apellido2}, {student.nombre}
                                     </span>
                                 </div>
-                                {isEvaluated && (
-                                    <span className="flex-shrink-0 w-2 h-2 bg-emerald-500 rounded-full" title="Examen evaluado"></span>
-                                )}
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    {isCooking && (
+                                        <span className="text-[10px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                                            🔥 Cocinando
+                                        </span>
+                                    )}
+                                    {isEvaluated && (
+                                        <span className="w-2 h-2 bg-emerald-500 rounded-full" title="Examen evaluado"></span>
+                                    )}
+                                </div>
                             </button>
                         );
                     })}
@@ -659,6 +705,24 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
             <main className="flex-1 bg-gray-100 overflow-hidden">
                 {renderRubric()}
             </main>
+
+            {/* Tablet Mode Full-Screen Overlay */}
+            <TabletModeView
+                isOpen={isTabletModeOpen}
+                onClose={() => setIsTabletModeOpen(false)}
+                students={students}
+                selectedStudentId={selectedStudentId}
+                onSelectStudent={setSelectedStudentId}
+                currentEvaluation={currentEvaluation}
+                onUpdateScore={handleScoreChange}
+                onUpdateChecklist={handleChecklistToggle}
+                onUpdateHeaderData={handleUpdateHeaderData}
+                onSaveEvaluation={handleSaveEvaluation}
+                isFinalFormat={currentPeriodConfig.isFinalFormat}
+                periodLabel={currentPeriodConfig.label}
+                finalScore={finalPointsData.scale10}
+                totalPoints100={finalPointsData.total100}
+            />
         </div>
     );
 };
