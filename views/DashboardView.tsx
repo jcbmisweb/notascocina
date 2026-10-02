@@ -7,12 +7,14 @@ import {
     CalendarPlusIcon,
     ClipboardCheckIcon,
     SettingsIcon,
+    PencilIcon,
     ClipboardListIcon as GestionAcademicaIcon
 } from '../components/icons';
 import FileUpload from '../components/FileUpload';
 import { useAppContext } from '../context/AppContext';
 import StatCard from '../components/StatCard';
 import ActionCard from '../components/ActionCard';
+import { ModalNotasExamenesTeoricos } from '../components/ModalNotasExamenesTeoricos';
 
 interface DashboardViewProps {
   onNavigate: (view: string) => void;
@@ -21,6 +23,7 @@ interface DashboardViewProps {
 const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const { students, practiceGroups, services, handleFileUpload: contextHandleFileUpload, teacherData } = useAppContext();
     const [loading, setLoading] = useState(false);
+    const [isExamModalOpen, setIsExamModalOpen] = useState(false);
 
     const handleFileUpload = async (file: File) => {
         setLoading(true);
@@ -64,10 +67,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-xl shadow-md">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Acciones Rápidas</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <ActionCard icon={UsersIcon} title="Gestionar Alumnos" description="Visualiza y edita las fichas" onClick={() => onNavigate('alumnos')} color="#3b82f6" />
-                        <ActionCard icon={CalendarPlusIcon} title="Planificar Servicios" description="Organiza las clases prácticas" onClick={() => onNavigate('gestion-practica')} color="#f59e0b" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <ActionCard icon={PencilIcon} title="Exámenes Teóricos" description="Poner notas teóricas rápidamente" onClick={() => setIsExamModalOpen(true)} color="#2563eb" />
                         <ActionCard icon={GestionAcademicaIcon} title="Gestión Académica" description="Centraliza todas las notas" onClick={() => onNavigate('gestion-academica')} color="#8b5cf6" />
+                        <ActionCard icon={UsersIcon} title="Evaluación Proyecto" description="Notas grupales e individuales" onClick={() => onNavigate('proyecto-evaluacion')} color="#7c3aed" />
+                        <ActionCard icon={CalendarPlusIcon} title="Planificar Servicios" description="Organiza las clases prácticas" onClick={() => onNavigate('gestion-practica')} color="#f59e0b" />
+                        <ActionCard icon={UsersIcon} title="Gestionar Alumnos" description="Visualiza y edita las fichas" onClick={() => onNavigate('alumnos')} color="#3b82f6" />
                         <ActionCard icon={SettingsIcon} title="Ajustes y Backups" description="Configura y guarda tus datos" onClick={() => onNavigate('gestion-app')} color="#6b7280" />
                     </div>
                 </div>
@@ -82,6 +87,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                  <p>Desarrollado por {teacherData.name}</p>
                  <p><a href={`mailto:${teacherData.email}`} className="hover:underline">{teacherData.email}</a></p>
             </footer>
+
+            <ModalNotasExamenesTeoricos
+                isOpen={isExamModalOpen}
+                onClose={() => setIsExamModalOpen(false)}
+                module="pc"
+            />
         </div>
     );
 };

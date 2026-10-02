@@ -23,6 +23,7 @@ const ModuleDashboardView = lazy(() => import('./views/ModuleDashboardView'));
 const ExamSchedulerView = lazy(() => import('./views/ExamSchedulerView'));
 const CoevaluacionDiabolicaView = lazy(() => import('./views/CoevaluacionDiabolicaView'));
 const DefinirGruposProyectoView = lazy(() => import('./views/DefinirGruposProyectoView'));
+const ProyectoEvaluacionView = lazy(() => import('./views/ProyectoEvaluacionView').then(m => ({ default: m.ProyectoEvaluacionView })));
 const AyudaFaqView = lazy(() => import('./views/AyudaFaqView'));
 const HelpDrawer = lazy(() => import('./components/HelpDrawer').then(m => ({ default: m.HelpDrawer })));
 import { LightbulbIcon } from './components/icons';
@@ -111,6 +112,8 @@ const AppContent: React.FC = () => {
                 return <InstrumentosView module="proyecto" />;
             case 'proyecto-grupos':
                 return <DefinirGruposProyectoView />;
+            case 'proyecto-evaluacion':
+                return <ProyectoEvaluacionView />;
             case 'proyecto-coevaluacion':
                 return <CoevaluacionDiabolicaView />;
 

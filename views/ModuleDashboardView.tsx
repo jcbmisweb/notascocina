@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import StatCard from '../components/StatCard';
 import ActionCard from '../components/ActionCard';
-import { FileTextIcon, BookOpenIcon, PencilIcon, ClipboardListIcon, RotateCcwIcon, UsersIcon } from '../components/icons';
+import { FileTextIcon, BookOpenIcon, PencilIcon, ClipboardListIcon, RotateCcwIcon, UsersIcon, CheckIcon, AlertTriangleIcon } from '../components/icons';
+import { ModalNotasExamenesTeoricos } from '../components/ModalNotasExamenesTeoricos';
 
 interface ModuleDashboardViewProps {
     module: 'pc' | 'optativa' | 'proyecto';
@@ -18,6 +19,7 @@ const MODULE_NAMES: Record<string, string> = {
 const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNavigate }) => {
     const context = useAppContext();
     const [isResetting, setIsResetting] = useState(false);
+    const [isExamModalOpen, setIsExamModalOpen] = useState(false);
 
     const [
         resultadosAprendizaje,
@@ -72,7 +74,24 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                     <h1 className="text-3xl font-bold text-gray-800">Resumen del Módulo: {moduleName}</h1>
                     <p className="text-gray-500 mt-1">Visión general de la configuración, currículo y progreso del módulo.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                    {module === 'proyecto' ? (
+                        <button
+                            onClick={() => onNavigate('proyecto-evaluacion')}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition"
+                        >
+                            <UsersIcon className="w-4 h-4" />
+                            Evaluar Proyecto (Grupal / Individual)
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setIsExamModalOpen(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition"
+                        >
+                            <PencilIcon className="w-4 h-4" />
+                            Acción Rápida: Poner Notas Exámenes Teóricos
+                        </button>
+                    )}
                     <button
                         onClick={handleResetCurriculum}
                         disabled={isResetting}
@@ -95,20 +114,83 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
             <div className="bg-white p-6 rounded-xl shadow-md">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Acciones del Módulo</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    <ActionCard icon={FileTextIcon} title="Gestionar RAs y Criterios" description="Define los resultados de aprendizaje" onClick={() => onNavigate(`${module}-ra`)} color="#8b5cf6" />
-                    <ActionCard icon={BookOpenIcon} title="Gestionar Unidades de Trabajo" description="Organiza las unidades didácticas" onClick={() => onNavigate(`${module}-ut`)} color="#10b981" />
-                    <ActionCard icon={PencilIcon} title="Gestionar Instrumentos" description="Configura los instrumentos de evaluación" onClick={() => onNavigate(`${module}-instrumentos`)} color="#f59e0b" />
-                    {module === 'proyecto' && (
+                    {module === 'proyecto' ? (
                         <>
-                            <ActionCard icon={UsersIcon} title="Definir Grupos de Proyecto" description="Crea restaurantes y equipos independientes de cocina" onClick={() => onNavigate('proyecto-grupos')} color="#7c3aed" />
+                            <ActionCard icon={ClipboardListIcon} title="Evaluación de Proyecto" description="Poner notas grupales de restaurante y notas individuales con justificaciones" onClick={() => onNavigate('proyecto-evaluacion')} color="#7c3aed" />
+                            <ActionCard icon={UsersIcon} title="Definir Grupos de Proyecto" description="Crea restaurantes y equipos independientes de cocina" onClick={() => onNavigate('proyecto-grupos')} color="#9333ea" />
                             <ActionCard icon={UsersIcon} title="Coevaluación Diabólica" description="Gestión de valoraciones cruzadas entre alumnos" onClick={() => onNavigate('proyecto-coevaluacion')} color="#dc2626" />
+                            <ActionCard icon={FileTextIcon} title="Gestionar RAs y Criterios" description="Define los resultados de aprendizaje" onClick={() => onNavigate(`${module}-ra`)} color="#8b5cf6" />
+                            <ActionCard icon={BookOpenIcon} title="Gestionar Unidades de Trabajo" description="Organiza las fases del proyecto" onClick={() => onNavigate(`${module}-ut`)} color="#10b981" />
+                            <ActionCard icon={PencilIcon} title="Gestionar Instrumentos" description="Configura los retos y fases del proyecto" onClick={() => onNavigate(`${module}-instrumentos`)} color="#f59e0b" />
+                        </>
+                    ) : (
+                        <>
+                            <ActionCard icon={PencilIcon} title="Notas Exámenes Teóricos" description="Acceso rápido para calificar exámenes teóricos sin candados" onClick={() => setIsExamModalOpen(true)} color="#2563eb" />
+                            <ActionCard icon={FileTextIcon} title="Gestionar RAs y Criterios" description="Define los resultados de aprendizaje" onClick={() => onNavigate(`${module}-ra`)} color="#8b5cf6" />
+                            <ActionCard icon={BookOpenIcon} title="Gestionar Unidades de Trabajo" description="Organiza las unidades didácticas" onClick={() => onNavigate(`${module}-ut`)} color="#10b981" />
+                            <ActionCard icon={PencilIcon} title="Gestionar Instrumentos" description="Configura los instrumentos de evaluación" onClick={() => onNavigate(`${module}-instrumentos`)} color="#f59e0b" />
                         </>
                     )}
                 </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-md mt-8">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Listado de Alumnos y Notas</h2>
+            {module === 'pc' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-900 shadow-xs">
+                    <div className="flex items-center gap-2.5">
+                        <span className="p-2 bg-blue-200 text-blue-800 rounded-lg">📝</span>
+                        <div>
+                            <span className="font-bold block">¿Quieres calificar o corregir exámenes teóricos?</span>
+                            <span className="text-blue-700">Utiliza la acción rápida para poner notas de examen sin bloqueos y con opción de pegado masivo desde Excel.</span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsExamModalOpen(true)}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-xs transition whitespace-nowrap"
+                    >
+                        Abrir Calificador Rápido
+                    </button>
+                </div>
+            )}
+
+            {module === 'proyecto' && (
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-purple-900 shadow-xs">
+                    <div className="flex items-center gap-2.5">
+                        <span className="p-2 bg-purple-200 text-purple-800 rounded-lg">🎯</span>
+                        <div>
+                            <span className="font-bold block">Evaluación de Proyecto por Restaurante / Equipos</span>
+                            <span className="text-purple-700">Pon una nota grupal que se distribuye a todo el equipo, y personaliza la nota individual de quien no colabore o destaque indicando el motivo.</span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => onNavigate('proyecto-evaluacion')}
+                        className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-xs transition whitespace-nowrap"
+                    >
+                        Ir a Evaluar Proyecto
+                    </button>
+                </div>
+            )}
+
+            <div className="bg-white p-6 rounded-xl shadow-md mt-6">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">Listado de Alumnos y Notas</h2>
+                    {module === 'pc' && (
+                        <button
+                            onClick={() => setIsExamModalOpen(true)}
+                            className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                            <PencilIcon className="w-3.5 h-3.5" /> Editar Exámenes Teóricos
+                        </button>
+                    )}
+                    {module === 'proyecto' && (
+                        <button
+                            onClick={() => onNavigate('proyecto-evaluacion')}
+                            className="text-xs font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                        >
+                            <PencilIcon className="w-3.5 h-3.5" /> Poner / Modificar Notas de Proyecto
+                        </button>
+                    )}
+                </div>
+
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50 uppercase">
@@ -121,6 +203,15 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                                         <th className="px-6 py-3">Servicios</th>
                                         <th className="px-6 py-3">Práctico</th>
                                         <th className="px-6 py-3 font-bold text-blue-900">Nota Final</th>
+                                    </>
+                                ) : module === 'proyecto' ? (
+                                    <>
+                                        <th className="px-6 py-3">Restaurante / Grupo</th>
+                                        <th className="px-6 py-3 text-center">Nota Grupal</th>
+                                        <th className="px-6 py-3 text-center">Nota Indiv.</th>
+                                        <th className="px-6 py-3">¿Colaboró? / Motivo</th>
+                                        <th className="px-6 py-3 font-bold text-purple-900 text-center">Nota Final Proyecto</th>
+                                        <th className="px-6 py-3 text-center">Acción</th>
                                     </>
                                 ) : (
                                     <>
@@ -157,11 +248,68 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
 
                                                     return (
                                                         <>
-                                                            <td className="px-6 py-4">{getExamGrade('Examen 1')}</td>
-                                                            <td className="px-6 py-4">{getExamGrade('Examen 2')}</td>
+                                                            <td className="px-6 py-4 font-semibold text-gray-800">{getExamGrade('Examen 1')}</td>
+                                                            <td className="px-6 py-4 font-semibold text-gray-800">{getExamGrade('Examen 2')}</td>
                                                             <td className="px-6 py-4">{servAvg.toFixed(2)}</td>
                                                             <td className="px-6 py-4">{practAvg.toFixed(2)}</td>
                                                             <td className="px-6 py-4 font-bold text-blue-700">{pcFinal}</td>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </>
+                                        ) : module === 'proyecto' ? (
+                                            <>
+                                                {(() => {
+                                                    const ev = context.proyectoEvaluations?.studentEvaluations?.[student.id];
+                                                    const grp = context.proyectoGroups.find(g => g.studentIds.includes(student.id));
+                                                    const effectiveGrupal = ev?.notaGrupal ?? (grp ? context.proyectoEvaluations?.groupGrades?.[grp.id] ?? null : null);
+                                                    const effectiveInd = ev?.notaIndividual ?? null;
+                                                    const finalP = ev?.finalGrade ?? (context.courseGrades[student.id]?.proyecto?.final ?? null);
+                                                    const hasIssue = ev && (!ev.collaborated || Boolean(ev.motivoAjuste));
+
+                                                    return (
+                                                        <>
+                                                            <td className="px-6 py-4">
+                                                                {grp ? (
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800">
+                                                                        <span className={`w-2 h-2 rounded-full ${grp.color.split(' ')[0] || 'bg-purple-500'}`}></span>
+                                                                        {grp.name}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-gray-400 italic text-xs">Sin Grupo</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center font-bold text-purple-900">
+                                                                {effectiveGrupal !== null ? Number(effectiveGrupal).toFixed(2) : '-'}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center font-semibold text-blue-900">
+                                                                {effectiveInd !== null ? Number(effectiveInd).toFixed(2) : '-'}
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                {hasIssue ? (
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-900" title={ev?.motivoAjuste}>
+                                                                        <AlertTriangleIcon className="w-3.5 h-3.5 text-amber-700" />
+                                                                        {ev?.motivoAjuste ? ev.motivoAjuste : 'No colaboró'}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-500">Normal</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center font-bold text-purple-700">
+                                                                {finalP !== null ? (
+                                                                    <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${Number(finalP) >= 5 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                                        {Number(finalP).toFixed(2)}
+                                                                    </span>
+                                                                ) : '-'}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center">
+                                                                <button
+                                                                    onClick={() => onNavigate('proyecto-evaluacion')}
+                                                                    className="px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-md transition"
+                                                                >
+                                                                    Evaluar
+                                                                </button>
+                                                            </td>
                                                         </>
                                                     );
                                                 })()}
@@ -202,6 +350,13 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                     </table>
                 </div>
             </div>
+
+            {/* Quick Action Modal for Theoretical Exam Grades */}
+            <ModalNotasExamenesTeoricos
+                isOpen={isExamModalOpen}
+                onClose={() => setIsExamModalOpen(false)}
+                module={module}
+            />
         </div>
     );
 };

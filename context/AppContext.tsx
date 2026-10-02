@@ -4,7 +4,7 @@ import {
     Student, PracticeGroup, Service, ServiceEvaluation, ServiceRole, EntryExitRecord, 
     AcademicGrades, CourseGrades, PracticalExamEvaluation, TeacherData, InstituteData, Toast, ToastType, StudentCalculatedGrades, TrimesterDates,
     ResultadoAprendizaje, CriterioEvaluacion, InstrumentoEvaluacion, Profesor, UnidadTrabajo, InstrumentGrades,
-    FemConfigs, PcFemSettings, WorkshopPractice,
+    FemConfigs, PcFemSettings, WorkshopPractice, ProyectoEvaluationsState,
 } from '../types';
 import { parseFile } from '../services/csvParser';
 import { auth, signInWithGoogle, logout } from '../lib/firebase';
@@ -272,6 +272,8 @@ interface AppContextType {
     setInstrumentGrades: React.Dispatch<React.SetStateAction<InstrumentGrades>>;
     courseGrades: CourseGrades;
     setCourseGrades: React.Dispatch<React.SetStateAction<CourseGrades>>;
+    proyectoEvaluations: ProyectoEvaluationsState;
+    setProyectoEvaluations: React.Dispatch<React.SetStateAction<ProyectoEvaluationsState>>;
     practicalExamEvaluations: PracticalExamEvaluation[];
     setPracticalExamEvaluations: React.Dispatch<React.SetStateAction<PracticalExamEvaluation[]>>;
     teacherData: TeacherData;
@@ -415,6 +417,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [academicGrades, setAcademicGrades, setAcademicGradesRaw] = useSyncedState<AcademicGrades>('academicGrades', {}, user, setSyncStatus);
     const [instrumentGrades, setInstrumentGrades, setInstrumentGradesRaw] = useSyncedState<InstrumentGrades>('instrumentGrades', {}, user, setSyncStatus);
     const [courseGrades, setCourseGrades, setCourseGradesRaw] = useSyncedState<CourseGrades>('courseGrades', {}, user, setSyncStatus);
+    const [proyectoEvaluations, setProyectoEvaluations, setProyectoEvaluationsRaw] = useSyncedState<ProyectoEvaluationsState>('proyectoEvaluations', {
+        groupGrades: {},
+        studentEvaluations: {},
+        pesoGrupal: 50,
+        pesoIndividual: 50,
+    }, user, setSyncStatus);
     const [practicalExamEvaluations, setPracticalExamEvaluations, setPracticalExamEvaluationsRaw] = useSyncedState<PracticalExamEvaluation[]>('practicalExamEvaluations', [], user, setSyncStatus);
     const [femConfigs, setFemConfigs, setFemConfigsRaw] = useSyncedState<FemConfigs>('femConfigs', {}, user, setSyncStatus);
     const [pcFemSettings, setPcFemSettings, setPcFemSettingsRaw] = useSyncedState<PcFemSettings>('pcFemSettings', { pcWeight: 80, femWeight: 20, recEvaluates100Percent: true }, user, setSyncStatus);
@@ -509,6 +517,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 { key: 'academicGrades', current: academicGrades, rawSetter: setAcademicGradesRaw },
                 { key: 'instrumentGrades', current: instrumentGrades, rawSetter: setInstrumentGradesRaw },
                 { key: 'courseGrades', current: courseGrades, rawSetter: setCourseGradesRaw },
+                { key: 'proyectoEvaluations', current: proyectoEvaluations, rawSetter: setProyectoEvaluationsRaw },
                 { key: 'practicalExamEvaluations', current: practicalExamEvaluations, rawSetter: setPracticalExamEvaluationsRaw },
                 { key: 'femConfigs', current: femConfigs, rawSetter: setFemConfigsRaw },
                 { key: 'pcFemSettings', current: pcFemSettings, rawSetter: setPcFemSettingsRaw },
@@ -1185,7 +1194,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const value: AppContextType = {
-        students, setStudents, practiceGroups, setPracticeGroups, proyectoGroups, setProyectoGroups, services, setServices, workshopPractices, setWorkshopPractices, serviceEvaluations, setServiceEvaluations, serviceRoles, setServiceRoles, entryExitRecords, setEntryExitRecords, academicGrades, setAcademicGrades, instrumentGrades, setInstrumentGrades, courseGrades, setCourseGrades, practicalExamEvaluations, setPracticalExamEvaluations, teacherData, setTeacherData, instituteData, setInstituteData, trimesterDates, setTrimesterDates,
+        students, setStudents, practiceGroups, setPracticeGroups, proyectoGroups, setProyectoGroups, services, setServices, workshopPractices, setWorkshopPractices, serviceEvaluations, setServiceEvaluations, serviceRoles, setServiceRoles, entryExitRecords, setEntryExitRecords, academicGrades, setAcademicGrades, instrumentGrades, setInstrumentGrades, courseGrades, setCourseGrades, proyectoEvaluations, setProyectoEvaluations, practicalExamEvaluations, setPracticalExamEvaluations, teacherData, setTeacherData, instituteData, setInstituteData, trimesterDates, setTrimesterDates,
         femConfigs, setFemConfigs, pcFemSettings, setPcFemSettings,
         
         pcResultadosAprendizaje, setPcResultadosAprendizaje, pcCriteriosEvaluacion, setPcCriteriosEvaluacion, pcInstrumentosEvaluacion, setPcInstrumentosEvaluacion, pcUnidadesTrabajo, setPcUnidadesTrabajo,

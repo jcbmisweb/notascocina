@@ -40,6 +40,24 @@ export interface ProyectoGroup {
   studentIds: string[];
 }
 
+export interface StudentProyectoEvaluation {
+  studentId: string;
+  groupId: string | null;
+  notaGrupal: number | null;
+  notaIndividual: number | null;
+  collaborated: boolean;
+  motivoAjuste: string;
+  overrideFinalGrade: number | null;
+  finalGrade: number | null;
+}
+
+export interface ProyectoEvaluationsState {
+  groupGrades: Record<string, number | null>;
+  studentEvaluations: Record<string, StudentProyectoEvaluation>;
+  pesoGrupal: number;
+  pesoIndividual: number;
+}
+
 export interface ServiceRole {
     id: string;
     name: string;

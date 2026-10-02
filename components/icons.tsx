@@ -150,6 +150,10 @@ export const ChevronDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) 
   <Icon {...props}><polyline points="6 9 12 15 18 9" /></Icon>
 );
 
+export const ChevronUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <Icon {...props}><polyline points="18 15 12 9 6 15" /></Icon>
+);
+
 export const ArrowLeftOnRectangleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <Icon {...props}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></Icon>
 );
@@ -201,6 +205,19 @@ export const HelpCircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) =
 export const LightbulbIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <Icon {...props}><path d="M9 18h6" /><path d="M10 22h4" /><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5" /></Icon>
 );
+
+export const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <Icon {...props}><polyline points="20 6 9 17 4 12" /></Icon>
+);
+
+export const UserIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <Icon {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Icon>
+);
+
+export const RefreshCwIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <Icon {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></Icon>
+);
+
 
 
 

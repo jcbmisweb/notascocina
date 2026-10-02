@@ -124,6 +124,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
                     <NavLink icon={ClockIcon} label="Planificador Exámenes" isActive={activeView === 'pc-exam-scheduler'} onClick={() => setActiveView('pc-exam-scheduler')} isCollapsed={isCollapsed} isSubItem />
                 </>
             )}
+            {moduleKey === 'proyecto' && (
+                <>
+                    <NavLink icon={GroupIcon} label="Definir Grupos" isActive={activeView === 'proyecto-grupos'} onClick={() => setActiveView('proyecto-grupos')} isCollapsed={isCollapsed} isSubItem />
+                    <NavLink icon={ClipboardCheckIcon} label="Evaluación Proyectos" isActive={activeView === 'proyecto-evaluacion'} onClick={() => setActiveView('proyecto-evaluacion')} isCollapsed={isCollapsed} isSubItem />
+                    <NavLink icon={UsersIcon} label="Coevaluación" isActive={activeView === 'proyecto-coevaluacion'} onClick={() => setActiveView('proyecto-coevaluacion')} isCollapsed={isCollapsed} isSubItem />
+                </>
+            )}
           </div>
         )}
       </div>

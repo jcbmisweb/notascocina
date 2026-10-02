@@ -407,7 +407,7 @@ const GestionAcademicaView: React.FC = () => {
                 const activityIndex = instrumentKey === 'examen1' ? 0 : 1;
                 const activity = activitiesInPeriod[activityIndex];
                 if (activity) {
-                    const grades = localInstrumentGrades[studentId]?.[activity.id] ?? instrumentGrades[student.id]?.[activity.id];
+                    const grades = localInstrumentGrades[studentId]?.[activity.id] ?? instrumentGrades[studentId]?.[activity.id];
                     const grade = typeof grades === 'object' && grades !== null && 'normal' in grades ? grades.normal : (typeof grades === 'number' ? grades : null);
                     if (grade !== null && grade !== undefined) return grade;
                 }
