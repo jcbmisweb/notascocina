@@ -199,12 +199,10 @@ export const ProyectoEvaluacionView: React.FC = () => {
             let totalEvaluado = puntosMaxEvaluadosRetos + (puntosExpo !== null ? maxExpo : 0);
             totalEvaluado = Math.min(10, totalEvaluado);
 
-            // Normalized 0-10 provisional grade
+            // Provisional grade: sum of points obtained so far out of 10 (waiting for all grades to be entered)
             let provisionalBase10: number | null = null;
-            if (totalEvaluado > 0) {
-                // Calculation: normalized rate on base 10 scale
-                const rate = (puntosRetos + ajusteDiabolico + (puntosExpo ?? 0)) / totalEvaluado;
-                provisionalBase10 = parseFloat((Math.min(10, Math.max(0, rate * 10))).toFixed(2));
+            if (totalEvaluado > 0 || retosCompletados > 0) {
+                provisionalBase10 = parseFloat(totalObtenido.toFixed(2));
             }
 
             // Direct sum out of 10 points
@@ -328,30 +326,53 @@ export const ProyectoEvaluacionView: React.FC = () => {
         });
     }, [sortedStudents, searchTerm, filterGroup, studentGroupMap]);
 
+const addImageToPdf = (doc: jsPDF, imageData: string | null | undefined, x: number, y: number, w: number, h: number) => {
+    if (imageData && imageData.startsWith('data:image')) {
+        try {
+            const imageType = imageData.substring(imageData.indexOf('/') + 1, imageData.indexOf(';'));
+            doc.addImage(imageData, imageType.toUpperCase(), x, y, w, h);
+        } catch (e) {
+            console.error("Error adding image to PDF:", e);
+        }
+    }
+};
+
     // Export PDF Report
     const handleExportPDF = (action: 'download' | 'print' = 'download') => {
         const doc = new jsPDF('landscape');
         const pageWidth = doc.internal.pageSize.getWidth();
 
-        // Header
+        // Top Logos (Center logo on left, Teacher logo on right)
+        if (instituteData.logo) {
+            addImageToPdf(doc, instituteData.logo, 10, 8, 16, 16);
+        }
+        if (teacherData.logo) {
+            addImageToPdf(doc, teacherData.logo, pageWidth - 10 - 16, 8, 16, 16);
+        }
+
+        // Header Title and Info (NO CIF)
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text(instituteData.name || 'Centro de Formación Profesional', pageWidth / 2, 14, { align: 'center' });
+        doc.setTextColor(30, 41, 59);
+        doc.text(instituteData.name || 'Centro de Formación Profesional', pageWidth / 2, 13, { align: 'center' });
 
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(100);
         const subheader = [
-            instituteData.cif ? `CIF: ${instituteData.cif}` : null,
             teacherData.name ? `Docente: ${teacherData.name}` : null,
             `Fecha: ${new Date().toLocaleDateString('es-ES')}`
         ].filter(Boolean).join(' | ');
-        doc.text(subheader, pageWidth / 2, 19, { align: 'center' });
+        doc.text(subheader, pageWidth / 2, 18, { align: 'center' });
 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(88, 28, 135);
-        doc.text('EVALUACIÓN DE RETOS - MÓDULO DE PROYECTO INTERMODULAR', pageWidth / 2, 26, { align: 'center' });
+        doc.text('EVALUACIÓN DE RETOS - MÓDULO DE PROYECTO INTERMODULAR', pageWidth / 2, 25, { align: 'center' });
+
+        doc.setDrawColor(216, 180, 254);
+        doc.setLineWidth(0.4);
+        doc.line(10, 29, pageWidth - 10, 29);
 
         const tableHead = [
             ['#', 'Alumno', 'Equipo / Restaurante', 'R1 Conf.', 'R2 Zonas', 'R3 Carta', 'R4 Interm.', 'R5 Escand.', 'R6 Diab.', 'R7 Final', 'R8 Expo (30%)', 'TOTAL /10', 'PROVISIONAL']

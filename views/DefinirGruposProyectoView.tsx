@@ -124,35 +124,58 @@ export const DefinirGruposProyectoView: React.FC = () => {
         return activeStudents.filter(s => !studentAssignments[s.id]);
     }, [activeStudents, studentAssignments]);
 
+const addImageToPdf = (doc: jsPDF, imageData: string | null | undefined, x: number, y: number, w: number, h: number) => {
+    if (imageData && imageData.startsWith('data:image')) {
+        try {
+            const imageType = imageData.substring(imageData.indexOf('/') + 1, imageData.indexOf(';'));
+            doc.addImage(imageData, imageType.toUpperCase(), x, y, w, h);
+        } catch (e) {
+            console.error("Error adding image to PDF:", e);
+        }
+    }
+};
+
     // Print & PDF Export
     const handlePrintOrExportPDF = (action: 'print' | 'download') => {
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
 
-        // Header
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text(instituteData.name || 'Centro de Formación Profesional', pageWidth / 2, 18, { align: 'center' });
+        // Top Logos (Center logo on left, Teacher logo on right)
+        if (instituteData.logo) {
+            addImageToPdf(doc, instituteData.logo, 14, 10, 16, 16);
+        }
+        if (teacherData.logo) {
+            addImageToPdf(doc, teacherData.logo, pageWidth - 14 - 16, 10, 16, 16);
+        }
 
-        doc.setFontSize(10);
+        // Header Title and Info (NO CIF)
+        doc.setFontSize(15);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 41, 59);
+        doc.text(instituteData.name || 'Centro de Formación Profesional', pageWidth / 2, 17, { align: 'center' });
+
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(100);
         const subheader = [
-            instituteData.cif ? `CIF: ${instituteData.cif}` : null,
             teacherData.name ? `Docente: ${teacherData.name}` : null,
             `Fecha: ${new Date().toLocaleDateString('es-ES')}`
         ].filter(Boolean).join(' | ');
-        doc.text(subheader, pageWidth / 2, 24, { align: 'center' });
+        doc.text(subheader, pageWidth / 2, 23, { align: 'center' });
 
-        doc.setFontSize(14);
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(88, 28, 135); // Purple 900
-        doc.text('MÓDULO: PROYECTO INTERMODULAR', pageWidth / 2, 33, { align: 'center' });
-        doc.setFontSize(11);
+        doc.text('MÓDULO: PROYECTO INTERMODULAR', pageWidth / 2, 31, { align: 'center' });
+        doc.setFontSize(10);
         doc.setTextColor(60);
-        doc.text(`Equipos de Trabajo y Restaurantes Formados (${proyectoGroups.length} Grupos | ${activeStudents.length} Alumnos)`, pageWidth / 2, 39, { align: 'center' });
+        doc.text(`Equipos de Trabajo y Restaurantes Formados (${proyectoGroups.length} Grupos | ${activeStudents.length} Alumnos)`, pageWidth / 2, 37, { align: 'center' });
 
-        let currentY = 46;
+        doc.setDrawColor(216, 180, 254);
+        doc.setLineWidth(0.4);
+        doc.line(14, 42, pageWidth - 14, 42);
+
+        let currentY = 48;
 
         proyectoGroups.forEach((group, groupIdx) => {
             const members = group.studentIds

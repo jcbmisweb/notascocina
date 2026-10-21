@@ -139,16 +139,34 @@ export const RotacionBrigadaView: React.FC = () => {
     // Export PDF
     const handleExportPDF = () => {
         const doc = new jsPDF({ orientation: 'landscape' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        const addImageToPdf = (d: jsPDF, img: string | null | undefined, x: number, y: number, w: number, h: number) => {
+            if (img && img.startsWith('data:image')) {
+                try {
+                    const imgType = img.substring(img.indexOf('/') + 1, img.indexOf(';'));
+                    d.addImage(img, imgType.toUpperCase(), x, y, w, h);
+                } catch(e) {}
+            }
+        };
+
+        if (instituteData.logo) {
+            addImageToPdf(doc, instituteData.logo, 14, 8, 15, 15);
+        }
+        if (teacherData.logo) {
+            addImageToPdf(doc, teacherData.logo, pageWidth - 14 - 15, 8, 15, 15);
+        }
         
-        doc.setFontSize(16);
+        doc.setFontSize(15);
         doc.setFont('helvetica', 'bold');
-        doc.text('MATRIZ DE ROTACIÓN DE BRIGADA Y PUESTOS', 14, 15);
+        doc.setTextColor(30, 41, 59);
+        doc.text('MATRIZ DE ROTACIÓN DE BRIGADA Y PUESTOS', 34, 14);
         
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${instituteData.name} - ${teacherData.name}`, 14, 21);
-        doc.text(`Filtro: Trimestre ${selectedTrimester.toUpperCase()} | Total Servicios Analizados: ${relevantServices.length}`, 14, 26);
-        doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 14, 31);
+        doc.setTextColor(100);
+        doc.text(`${instituteData.name} - ${teacherData.name}`, 34, 19);
+        doc.text(`Filtro: Trimestre ${selectedTrimester.toUpperCase()} | Total Servicios: ${relevantServices.length} | Fecha: ${new Date().toLocaleDateString('es-ES')}`, 34, 24);
 
         const headers = ['#', 'Alumno', 'Grupo', ...serviceRoles.map(r => r.name), 'Total Servicios', '¿Lideró?'];
         const tableBody = filteredRows.map((row, idx) => [
