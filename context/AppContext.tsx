@@ -9,7 +9,7 @@ import {
 import { parseFile } from '../services/csvParser';
 import { auth, signInWithGoogle, logout } from '../lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, setDoc, getDocs, collection, serverTimestamp, getDocFromServer } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection, serverTimestamp, getDocFromServer, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 import { pcResultadosAprendizaje as mockRA, pcCriteriosEvaluacion as mockCriterios, pcUnidadesTrabajo as mockUTs, pcInstrumentosEvaluacion as mockInstrumentos } from '../data/pc-data';
@@ -631,6 +631,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const syncConfigs = [
                 { key: 'students', current: students, rawSetter: setStudentsRaw },
                 { key: 'practiceGroups', current: practiceGroups, rawSetter: setPracticeGroupsRaw },
+                { key: 'proyectoGroups', current: proyectoGroups, rawSetter: setProyectoGroupsRaw },
                 { key: 'services', current: services, rawSetter: setServicesRaw },
                 { key: 'workshopPractices', current: workshopPractices, rawSetter: setWorkshopPracticesRaw },
                 { key: 'serviceEvaluations', current: serviceEvaluations, rawSetter: setServiceEvaluationsRaw },
@@ -816,6 +817,82 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else {
             setSyncStatus('offline');
         }
+    }, [user]);
+
+    // Realtime Cloud Synchronization Listener across all devices (PC, Tablet, Mobile)
+    useEffect(() => {
+        if (!user) return;
+
+        const syncSetters: Record<string, (val: any) => void> = {
+            'students': setStudentsRaw,
+            'practiceGroups': setPracticeGroupsRaw,
+            'proyectoGroups': setProyectoGroupsRaw,
+            'services': setServicesRaw,
+            'workshopPractices': setWorkshopPracticesRaw,
+            'serviceEvaluations': setServiceEvaluationsRaw,
+            'serviceRoles': setServiceRolesRaw,
+            'entryExitRecords': setEntryExitRecordsRaw,
+            'academicGrades': setAcademicGradesRaw,
+            'instrumentGrades': setInstrumentGradesRaw,
+            'courseGrades': setCourseGradesRaw,
+            'proyectoEvaluations': setProyectoEvaluationsRaw,
+            'practicalExamEvaluations': setPracticalExamEvaluationsRaw,
+            'femConfigs': setFemConfigsRaw,
+            'pcFemSettings': setPcFemSettingsRaw,
+            'teacher-app-data': setTeacherDataRaw,
+            'institute-app-data': setInstituteDataRaw,
+            'trimester-dates': setTrimesterDatesRaw,
+            'profesores': setProfesoresRaw,
+            'pc-resultadosAprendizaje': setPcResultadosAprendizajeRaw,
+            'pc-criteriosEvaluacion': setPcCriteriosEvaluacionRaw,
+            'pc-instrumentosEvaluacion': setPcInstrumentosEvaluacionRaw,
+            'pc-unidadesTrabajo': setPcUnidadesTrabajoRaw,
+            'optativa-resultadosAprendizaje': setOptativaResultadosAprendizajeRaw,
+            'optativa-criteriosEvaluacion': setOptativaCriteriosEvaluacionRaw,
+            'optativa-instrumentosEvaluacion': setOptativaInstrumentosEvaluacionRaw,
+            'optativa-unidadesTrabajo': setOptativaUnidadesTrabajoRaw,
+            'proyecto-resultadosAprendizaje': setProyectoResultadosAprendizajeRaw,
+            'proyecto-criteriosEvaluacion': setProyectoCriteriosEvaluacionRaw,
+            'proyecto-instrumentosEvaluacion': setProyectoInstrumentosEvaluacionRaw,
+            'proyecto-unidadesTrabajo': setProyectoUnidadesTrabajoRaw,
+        };
+
+        const dataCollectionRef = collection(db, 'users', user.uid, 'data');
+        const unsubscribe = onSnapshot(dataCollectionRef, { includeMetadataChanges: true }, (snapshot) => {
+            // Do not re-apply local writes that are still pending acknowledgment
+            if (snapshot.metadata.hasPendingWrites) {
+                return;
+            }
+
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added' || change.type === 'modified') {
+                    const key = change.doc.id;
+                    const docData = change.doc.data();
+                    if (docData && docData.data !== undefined) {
+                        const setter = syncSetters[key];
+                        if (setter) {
+                            try {
+                                const currentLocal = window.localStorage.getItem(key);
+                                const newJson = JSON.stringify(docData.data);
+                                if (currentLocal !== newJson) {
+                                    window.localStorage.setItem(key, newJson);
+                                    setter(docData.data);
+                                    console.info(`[Firebase Realtime] Clave "${key}" sincronizada en tiempo real desde otro dispositivo.`);
+                                }
+                            } catch (e) {
+                                console.error(`[Firebase Realtime] Error aplicando clave "${key}":`, e);
+                            }
+                        }
+                    }
+                }
+            });
+        }, (err) => {
+            console.warn("[Firebase Realtime] Advertencia en listener:", err);
+        });
+
+        return () => {
+            unsubscribe();
+        };
     }, [user]);
 
     const addToast = (message: string, type: ToastType = 'info') => {
@@ -1139,8 +1216,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const handleResetApp = async () => {
         const keysToRemove = [
-            'students', 'practiceGroups', 'services', 'serviceEvaluations', 'serviceRoles', 'entryExitRecords', 
-            'academicGrades', 'instrumentGrades', 'courseGrades', 'practicalExamEvaluations', 'teacher-app-data', 'institute-app-data', 
+            'students', 'practiceGroups', 'proyectoGroups', 'services', 'serviceEvaluations', 'serviceRoles', 'entryExitRecords', 
+            'academicGrades', 'instrumentGrades', 'courseGrades', 'proyectoEvaluations', 'practicalExamEvaluations', 'teacher-app-data', 'institute-app-data', 
             'trimester-dates', 'femConfigs', 'pcFemSettings',
             'pc-resultadosAprendizaje', 'pc-criteriosEvaluacion', 'pc-instrumentosEvaluacion', 'pc-unidadesTrabajo',
             'optativa-resultadosAprendizaje', 'optativa-criteriosEvaluacion', 'optativa-instrumentosEvaluacion', 'optativa-unidadesTrabajo',

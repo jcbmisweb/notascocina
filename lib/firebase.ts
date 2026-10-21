@@ -1,33 +1,37 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getAnalytics } from 'firebase/analytics';
+import defaultConfig from '../firebase-applet-config.json';
+
+const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDNAvhPe9XJ8XD1ngqeyEKWAMBBIMyxZL4",
-  authDomain: "notascocina-2e8d7.firebaseapp.com",
-  projectId: "notascocina-2e8d7",
-  storageBucket: "notascocina-2e8d7.firebasestorage.app",
-  messagingSenderId: "1050131307239",
-  appId: "1:1050131307239:web:0b962e95886ef672b2e042",
-  measurementId: "G-XJKN8V0XPG"
+  apiKey: metaEnv?.VITE_FIREBASE_API_KEY || defaultConfig.apiKey,
+  authDomain: metaEnv?.VITE_FIREBASE_AUTH_DOMAIN || defaultConfig.authDomain,
+  projectId: metaEnv?.VITE_FIREBASE_PROJECT_ID || defaultConfig.projectId,
+  storageBucket: metaEnv?.VITE_FIREBASE_STORAGE_BUCKET || defaultConfig.storageBucket,
+  messagingSenderId: metaEnv?.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultConfig.messagingSenderId,
+  appId: metaEnv?.VITE_FIREBASE_APP_ID || defaultConfig.appId,
+  measurementId: metaEnv?.VITE_FIREBASE_MEASUREMENT_ID || defaultConfig.measurementId || ""
 };
 
-const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
-export const db = getFirestore(app);
+const databaseId = metaEnv?.VITE_FIREBASE_DATABASE_ID || defaultConfig.firestoreDatabaseId;
+
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
-    console.log("Llamando a signInWithPopup...");
+    console.info("[Firebase Auth] Iniciando sesión con Google...", { projectId: firebaseConfig.projectId, databaseId });
     try {
         const result = await signInWithPopup(auth, googleProvider);
-        console.log("signInWithPopup exitoso", result);
+        console.info("[Firebase Auth] Inicio de sesión exitoso:", result.user?.email);
         return result;
     } catch (error) {
-        console.error("signInWithPopup falló", error);
+        console.error("[Firebase Auth] signInWithPopup falló:", error);
         throw error;
     }
 };
+
 export const logout = () => signOut(auth);

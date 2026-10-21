@@ -136,8 +136,8 @@ const GestionAppView: React.FC = () => {
 
     
     const backupOptions = [
-        'students', 'practiceGroups', 'services', 'serviceEvaluations', 'serviceRoles', 'entryExitRecords', 
-        'academicGrades', 'courseGrades', 'instrumentGrades', 'practicalExamEvaluations', 
+        'students', 'practiceGroups', 'proyectoGroups', 'services', 'serviceEvaluations', 'serviceRoles', 'entryExitRecords', 
+        'academicGrades', 'courseGrades', 'instrumentGrades', 'proyectoEvaluations', 'practicalExamEvaluations', 
         'pc-resultadosAprendizaje', 'pc-criteriosEvaluacion', 'pc-instrumentosEvaluacion', 'pc-unidadesTrabajo',
         'optativa-resultadosAprendizaje', 'optativa-criteriosEvaluacion', 'optativa-instrumentosEvaluacion', 'optativa-unidadesTrabajo',
         'proyecto-resultadosAprendizaje', 'proyecto-criteriosEvaluacion', 'proyecto-instrumentosEvaluacion', 'proyecto-unidadesTrabajo',
@@ -148,6 +148,7 @@ const GestionAppView: React.FC = () => {
     const backupOptionLabels: Record<string, string> = {
         'students': 'Alumnos',
         'practiceGroups': 'Grupos de Práctica',
+        'proyectoGroups': 'Grupos de Proyecto Intermodular',
         'services': 'Servicios',
         'serviceEvaluations': 'Evaluaciones de Servicio',
         'serviceRoles': 'Roles de Servicio',
@@ -155,6 +156,7 @@ const GestionAppView: React.FC = () => {
         'academicGrades': 'Notas Académicas (Principal)',
         'courseGrades': 'Notas Otros Módulos',
         'instrumentGrades': 'Notas por Instrumentos (Opt/Proy)',
+        'proyectoEvaluations': 'Evaluación de Retos de Proyecto',
         'practicalExamEvaluations': 'Exámenes Prácticos',
         'pc-resultadosAprendizaje': 'PC: RAs',
         'pc-criteriosEvaluacion': 'PC: Criterios',

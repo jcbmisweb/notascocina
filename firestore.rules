@@ -24,11 +24,15 @@ service cloud.firestore {
       return request.resource.data;
     }
 
+    // Test connection endpoint
+    match /test/connection {
+      allow read: if true;
+    }
+
     // User profile matching rules
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow create: if isOwner(userId) && incoming().uid == userId && incoming().email is string && incoming().updatedAt == request.time;
-      allow update: if isOwner(userId) && incoming().uid == userId && incoming().email is string && incoming().updatedAt == request.time;
+      allow create, update: if isOwner(userId) && incoming().uid == userId;
       allow delete: if false;
     }
 
@@ -36,7 +40,7 @@ service cloud.firestore {
     match /users/{userId}/data/{docId} {
       allow get: if isOwner(userId) && isValidId(docId);
       allow list: if isOwner(userId);
-      allow create, update: if isOwner(userId) && isValidId(docId) && incoming().updatedAt == request.time;
+      allow create, update: if isOwner(userId) && isValidId(docId);
       allow delete: if isOwner(userId) && isValidId(docId);
     }
   }
