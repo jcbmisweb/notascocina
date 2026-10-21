@@ -197,7 +197,7 @@ export const DEFAULT_PROYECTO_CONFIG: ProyectoStructureConfig = {
             number: 2,
             title: 'Reto 2: Zonas geográficas asignadas',
             shortTitle: 'R2: Zonas Geográficas',
-            description: 'Definición de zonas geográficas para la propuesta gastronómica (1.0 pto total: 0.5 grupal + 0.5 individual).',
+            description: 'Definición de zonas geográficas (1.0 pto total: 0.5 grupal + 0.5 individual).',
             bloque: 'retos',
             tasks: [
                 { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 0.5, step: 0.05 },
@@ -209,10 +209,10 @@ export const DEFAULT_PROYECTO_CONFIG: ProyectoStructureConfig = {
             number: 3,
             title: 'Reto 3: Diseño de la Carta Sostenible y Fichas Culinarias',
             shortTitle: 'R3: Carta y Fichas',
-            description: 'Diseño integral de la carta sostenible y fichas culinarias (2.0 ptos total: 1.0 grupal + 1.0 individual).',
+            description: 'Diseño integral de la carta y fichas (1.5 ptos total: 0.5 grupal + 1.0 individual).',
             bloque: 'retos',
             tasks: [
-                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 1.0, step: 0.1 },
+                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 0.5, step: 0.05 },
                 { id: 'individual', name: 'Tarea Individual', type: 'individual', maxScore: 1.0, step: 0.1 }
             ]
         },
@@ -221,10 +221,10 @@ export const DEFAULT_PROYECTO_CONFIG: ProyectoStructureConfig = {
             number: 4,
             title: 'Reto 4: Entrega Intermedia del proyecto',
             shortTitle: 'R4: Entrega Intermedia',
-            description: 'Memoria y estado de avance intermedio del proyecto (1.0 pto grupal).',
+            description: 'Memoria y estado de avance intermedio del proyecto (0.5 pto grupal).',
             bloque: 'retos',
             tasks: [
-                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 1.0, step: 0.1 }
+                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 0.5, step: 0.05 }
             ]
         },
         {
@@ -232,11 +232,11 @@ export const DEFAULT_PROYECTO_CONFIG: ProyectoStructureConfig = {
             number: 5,
             title: 'Reto 5: Escandallos, Justificación Gastronómica y Análisis de Costes',
             shortTitle: 'R5: Escandallos y Costes',
-            description: 'Cálculo de costes, escandallos y viabilidad económica (2.0 ptos total: 1.0 grupal + 1.0 individual).',
+            description: 'Cálculo de costes, escandallos y viabilidad económica (2.0 ptos total: 0.5 grupal + 1.5 individual).',
             bloque: 'retos',
             tasks: [
-                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 1.0, step: 0.1 },
-                { id: 'individual', name: 'Tarea Individual', type: 'individual', maxScore: 1.0, step: 0.1 }
+                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 0.5, step: 0.05 },
+                { id: 'individual', name: 'Tarea Individual', type: 'individual', maxScore: 1.5, step: 0.1 }
             ]
         },
         {
@@ -255,10 +255,10 @@ export const DEFAULT_PROYECTO_CONFIG: ProyectoStructureConfig = {
             number: 7,
             title: 'Reto 7: Entrega Final del proyecto',
             shortTitle: 'R7: Entrega Final Memoria',
-            description: 'Entrega definitiva y completa de la memoria del proyecto (1.0 pto grupal).',
+            description: 'Memoria individual y entrega definitiva del proyecto (1.0 pto individual).',
             bloque: 'retos',
             tasks: [
-                { id: 'grupal', name: 'Tarea Grupal (Memoria Final)', type: 'grupal', maxScore: 1.0, step: 0.1 }
+                { id: 'individual', name: 'Tarea Individual (Memoria Final)', type: 'individual', maxScore: 1.0, step: 0.1 }
             ]
         },
         {
