@@ -17,7 +17,8 @@ const EvaluacionInstrumentosTab: React.FC = () => {
         proyectoInstrumentosEvaluacion,
         pcInstrumentosEvaluacion,
         teacherData, instituteData,
-        addToast
+        addToast,
+        isStudentConvalidated
     } = useAppContext();
 
     const [selectedModule, setSelectedModule] = useState<'pc' | 'optativa' | 'proyecto'>('pc');
@@ -115,7 +116,11 @@ const EvaluacionInstrumentosTab: React.FC = () => {
         return acts;
     }, [selectedModule, pcInstrumentosEvaluacion, optativaInstrumentosEvaluacion, proyectoInstrumentosEvaluacion]);
 
-    const sortedStudents = useMemo(() => [...students].sort((a, b) => a.apellido1.localeCompare(b.apellido1)), [students]);
+    const sortedStudents = useMemo(() => {
+        return [...students]
+            .filter(student => !isStudentConvalidated(student.id, selectedModule))
+            .sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+    }, [students, selectedModule, isStudentConvalidated]);
 
     const handleGradeChange = (studentId: string, activityId: string, value: string) => {
         const numericValue = value === '' ? null : parseFloat(value);

@@ -139,3 +139,138 @@ export const ACADEMIC_EVALUATION_STRUCTURE = {
     }
   ]
 };
+
+// --- Configuración de los 8 Retos del Módulo de Proyecto Intermodular ---
+
+export interface RetoTaskConfig {
+    id: 'grupal' | 'individual' | 'entrega' | 'diabolica';
+    name: string;
+    type: 'grupal' | 'individual' | 'entrega';
+    maxScore?: number;
+    minScore?: number;
+    step?: number;
+    description?: string;
+}
+
+export interface RetoConfig {
+    id: string; // 'reto1' ... 'reto8'
+    number: number;
+    title: string;
+    shortTitle: string;
+    description: string;
+    bloque: 'retos' | 'exposicion';
+    tasks: RetoTaskConfig[];
+}
+
+export interface ProyectoStructureConfig {
+    bloques: {
+        retosWeight: number; // 70% (7 puntos)
+        exposicionWeight: number; // 30% (3 puntos)
+    };
+    retos: RetoConfig[];
+}
+
+export const DEFAULT_PROYECTO_CONFIG: ProyectoStructureConfig = {
+    bloques: {
+        retosWeight: 70,
+        exposicionWeight: 30,
+    },
+    retos: [
+        {
+            id: 'reto1',
+            number: 1,
+            title: 'Reto 1: Configuración de los proyectos',
+            shortTitle: 'R1: Configuración',
+            description: 'Tarea Grupal: No tiene nota numérica, solo registro formal de que se ha entregado y fecha.',
+            bloque: 'retos',
+            tasks: [
+                {
+                    id: 'entrega',
+                    name: 'Entrega de Configuración',
+                    type: 'entrega',
+                    description: 'Registro de entrega y fecha (sin nota numérica)'
+                }
+            ]
+        },
+        {
+            id: 'reto2',
+            number: 2,
+            title: 'Reto 2: Zonas geográficas asignadas',
+            shortTitle: 'R2: Zonas Geográficas',
+            description: 'Definición de zonas geográficas para la propuesta gastronómica (1.0 pto total: 0.5 grupal + 0.5 individual).',
+            bloque: 'retos',
+            tasks: [
+                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 0.5, step: 0.05 },
+                { id: 'individual', name: 'Tarea Individual', type: 'individual', maxScore: 0.5, step: 0.05 }
+            ]
+        },
+        {
+            id: 'reto3',
+            number: 3,
+            title: 'Reto 3: Diseño de la Carta Sostenible y Fichas Culinarias',
+            shortTitle: 'R3: Carta y Fichas',
+            description: 'Diseño integral de la carta sostenible y fichas culinarias (2.0 ptos total: 1.0 grupal + 1.0 individual).',
+            bloque: 'retos',
+            tasks: [
+                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 1.0, step: 0.1 },
+                { id: 'individual', name: 'Tarea Individual', type: 'individual', maxScore: 1.0, step: 0.1 }
+            ]
+        },
+        {
+            id: 'reto4',
+            number: 4,
+            title: 'Reto 4: Entrega Intermedia del proyecto',
+            shortTitle: 'R4: Entrega Intermedia',
+            description: 'Memoria y estado de avance intermedio del proyecto (1.0 pto grupal).',
+            bloque: 'retos',
+            tasks: [
+                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 1.0, step: 0.1 }
+            ]
+        },
+        {
+            id: 'reto5',
+            number: 5,
+            title: 'Reto 5: Escandallos, Justificación Gastronómica y Análisis de Costes',
+            shortTitle: 'R5: Escandallos y Costes',
+            description: 'Cálculo de costes, escandallos y viabilidad económica (2.0 ptos total: 1.0 grupal + 1.0 individual).',
+            bloque: 'retos',
+            tasks: [
+                { id: 'grupal', name: 'Tarea Grupal', type: 'grupal', maxScore: 1.0, step: 0.1 },
+                { id: 'individual', name: 'Tarea Individual', type: 'individual', maxScore: 1.0, step: 0.1 }
+            ]
+        },
+        {
+            id: 'reto6',
+            number: 6,
+            title: 'Reto 6: Evaluación Diabólica (Coevaluación)',
+            shortTitle: 'R6: Coevaluación Diabólica',
+            description: 'Valoración cruzada individual entre compañeros de equipo (hasta +/- 1 punto de ajuste).',
+            bloque: 'retos',
+            tasks: [
+                { id: 'diabolica', name: 'Ajuste Individual Coevaluación', type: 'individual', minScore: -1.0, maxScore: 1.0, step: 0.1, description: 'Hasta +/- 1 punto' }
+            ]
+        },
+        {
+            id: 'reto7',
+            number: 7,
+            title: 'Reto 7: Entrega Final del proyecto',
+            shortTitle: 'R7: Entrega Final Memoria',
+            description: 'Entrega definitiva y completa de la memoria del proyecto (1.0 pto grupal).',
+            bloque: 'retos',
+            tasks: [
+                { id: 'grupal', name: 'Tarea Grupal (Memoria Final)', type: 'grupal', maxScore: 1.0, step: 0.1 }
+            ]
+        },
+        {
+            id: 'reto8',
+            number: 8,
+            title: 'Reto 8: Exposición de proyecto',
+            shortTitle: 'R8: Exposición (30%)',
+            description: 'Defensa oral y exposición individual del proyecto (3.0 ptos individuales = 30% de la nota final).',
+            bloque: 'exposicion',
+            tasks: [
+                { id: 'individual', name: 'Nota Individual Exposición', type: 'individual', maxScore: 3.0, step: 0.1 }
+            ]
+        }
+    ]
+};

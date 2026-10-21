@@ -268,8 +268,13 @@ const RAView: React.FC<RAViewProps> = ({ module }) => {
         calculatedStudentGrades,
         teacherData,
         instituteData,
-        addToast, 
+        addToast,
+        isStudentConvalidated 
     } = context;
+
+    const activeStudents = useMemo(() => {
+        return students.filter(s => !isStudentConvalidated(s.id, module));
+    }, [students, isStudentConvalidated, module]);
 
     const [
         resultadosAprendizaje, setResultadosAprendizaje,
@@ -346,18 +351,18 @@ const RAView: React.FC<RAViewProps> = ({ module }) => {
     const averageGrades = useMemo(() => {
         const raAverages = new Map<string, number>();
         const criterioAverages = new Map<string, number>();
-        if (students.length === 0) return { raAverages, criterioAverages };
+        if (activeStudents.length === 0) return { raAverages, criterioAverages };
         
         for (const ra of Object.values(resultadosAprendizaje) as ResultadoAprendizaje[]) {
-            const grades = students.map(s => calculateRAGrade(ra, s.id, module, criteriosEvaluacion, academicGrades, instrumentGrades, calculatedStudentGrades).grade).filter(g => g !== null) as number[];
+            const grades = activeStudents.map(s => calculateRAGrade(ra, s.id, module, criteriosEvaluacion, academicGrades, instrumentGrades, calculatedStudentGrades).grade).filter(g => g !== null) as number[];
             if (grades.length > 0) raAverages.set(ra.id, grades.reduce((s, g) => s + g, 0) / grades.length);
         }
         for (const crit of Object.values(criteriosEvaluacion) as CriterioEvaluacion[]) {
-            const grades = students.map(s => calculateCriterioGrade(crit, s.id, module, academicGrades, instrumentGrades, calculatedStudentGrades)).filter(g => g !== null) as number[];
+            const grades = activeStudents.map(s => calculateCriterioGrade(crit, s.id, module, academicGrades, instrumentGrades, calculatedStudentGrades)).filter(g => g !== null) as number[];
             if (grades.length > 0) criterioAverages.set(crit.id, grades.reduce((s, g) => s + g, 0) / grades.length);
         }
         return { raAverages, criterioAverages };
-    }, [students, resultadosAprendizaje, criteriosEvaluacion, academicGrades, instrumentGrades, calculatedStudentGrades, module]);
+    }, [activeStudents, resultadosAprendizaje, criteriosEvaluacion, academicGrades, instrumentGrades, calculatedStudentGrades, module]);
 
     const activityInfoMap = useMemo(() => {
         // FIX: Added 't3' to the trimester type of the Map definition on line 355 to fix assignability error on line 357.

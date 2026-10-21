@@ -228,7 +228,9 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                             </tr>
                         </thead>
                         <tbody>
-                            {context.students.map(student => {
+                            {context.students
+                                .filter(student => !context.isStudentConvalidated(student.id, module))
+                                .map(student => {
                                 return (
                                     <tr key={student.id} className="bg-white border-b hover:bg-gray-50">
                                         <td className="px-6 py-4 font-medium text-gray-900">{student.nombre} {student.apellido1} {student.apellido2}</td>
@@ -265,18 +267,20 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                                                 {(() => {
                                                     const ev = context.proyectoEvaluations?.studentEvaluations?.[student.id];
                                                     const grp = context.proyectoGroups.find(g => g.studentIds.includes(student.id));
+                                                    const isCoord = grp?.coordinadorId === student.id;
                                                     const effectiveGrupal = ev?.notaGrupal ?? (grp ? context.proyectoEvaluations?.groupGrades?.[grp.id] ?? null : null);
                                                     const effectiveInd = ev?.notaIndividual ?? null;
-                                                    const finalP = ev?.finalGrade ?? (context.courseGrades[student.id]?.proyecto?.final ?? null);
+                                                    const finalP = ev?.finalGrade ?? (context.courseGrades[student.id]?.proyecto?.final ?? context.courseGrades[student.id]?.['Proyecto']?.final ?? null);
                                                     const hasIssue = ev && (!ev.collaborated || Boolean(ev.motivoAjuste));
 
                                                     return (
                                                         <>
                                                             <td className="px-6 py-4">
                                                                 {grp ? (
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800">
+                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-purple-100 text-purple-800">
                                                                         <span className={`w-2 h-2 rounded-full ${grp.color.split(' ')[0] || 'bg-purple-500'}`}></span>
-                                                                        {grp.name}
+                                                                        <span>{grp.name}</span>
+                                                                        {isCoord && <span title="Coordinador/a del equipo">👑</span>}
                                                                     </span>
                                                                 ) : (
                                                                     <span className="text-gray-400 italic text-xs">Sin Grupo</span>

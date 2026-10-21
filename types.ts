@@ -38,6 +38,7 @@ export interface ProyectoGroup {
   name: string;
   color: string;
   studentIds: string[];
+  coordinadorId?: string | null;
 }
 
 export interface StudentProyectoEvaluation {
@@ -51,11 +52,29 @@ export interface StudentProyectoEvaluation {
   finalGrade: number | null;
 }
 
+export interface RetoGroupEntry {
+  entregado?: boolean;
+  fechaEntrega?: string;
+  notaGrupal?: number | null;
+}
+
+export interface RetoStudentEntry {
+  notaIndividual?: number | null;
+  ajusteDiabolico?: number | null;
+  observaciones?: string;
+}
+
 export interface ProyectoEvaluationsState {
-  groupGrades: Record<string, number | null>;
-  studentEvaluations: Record<string, StudentProyectoEvaluation>;
-  pesoGrupal: number;
-  pesoIndividual: number;
+  groupGrades?: Record<string, number | null>;
+  studentEvaluations?: Record<string, StudentProyectoEvaluation>;
+  pesoGrupal?: number;
+  pesoIndividual?: number;
+
+  // Estructura avanzada de 8 Retos + Exposición
+  customConfig?: any; // ProyectoStructureConfig
+  retosGroupGrades?: Record<string, Record<string, RetoGroupEntry>>;
+  retosStudentGrades?: Record<string, Record<string, RetoStudentEntry>>;
+  exposicionGrades?: Record<string, number | null>;
 }
 
 export interface ServiceRole {

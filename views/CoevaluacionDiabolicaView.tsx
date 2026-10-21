@@ -21,8 +21,9 @@ interface PeerReviewRecord {
 }
 
 export default function CoevaluacionDiabolicaView() {
-    const { students, instrumentGrades, setInstrumentGrades, addToast } = useAppContext();
-    const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
+    const { students, instrumentGrades, setInstrumentGrades, addToast, isStudentConvalidated } = useAppContext();
+    const activeStudents = React.useMemo(() => students.filter(s => !isStudentConvalidated(s.id, 'proyecto')), [students, isStudentConvalidated]);
+    const [selectedStudentId, setSelectedStudentId] = useState<string>(activeStudents[0]?.id || '');
     
     // State for peer evaluations given by selectedStudent to their peers
     // Record format: { [targetStudentId]: CoevaluacionItem }
@@ -31,10 +32,10 @@ export default function CoevaluacionDiabolicaView() {
     // Teacher override comments & final notes
     const [teacherNotes, setTeacherNotes] = useState<Record<string, { adjustedGrade: number | null, comment: string }>>({});
 
-    const selectedStudent = students.find(s => s.id === selectedStudentId);
+    const selectedStudent = activeStudents.find(s => s.id === selectedStudentId);
 
     // Filter potential peers (excluding selected student)
-    const peerCandidates = students.filter(s => s.id !== selectedStudentId);
+    const peerCandidates = activeStudents.filter(s => s.id !== selectedStudentId);
 
     const handlePeerChange = (targetId: string, field: keyof CoevaluacionItem, value: any) => {
         setPeerReviews(prev => ({
@@ -78,7 +79,7 @@ export default function CoevaluacionDiabolicaView() {
                             onChange={e => setSelectedStudentId(e.target.value)}
                             className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-red-500"
                         >
-                            {students.map(s => (
+                            {activeStudents.map(s => (
                                 <option key={s.id} value={s.id}>
                                     {s.apellido1} {s.apellido2}, {s.nombre}
                                 </option>

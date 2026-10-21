@@ -1316,10 +1316,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const isStudentConvalidated = useCallback((studentId: string, moduleKey: 'pc' | 'optativa' | 'proyecto'): boolean => {
+        const studentCG = courseGrades?.[studentId] || {};
         if (moduleKey === 'pc') {
-            return Boolean(femConfigs?.[studentId]?.isConvalidated || courseGrades?.[studentId]?.pc?.isConvalidated);
+            return Boolean(
+                femConfigs?.[studentId]?.isConvalidated || 
+                studentCG['pc']?.isConvalidated || 
+                studentCG['PC']?.isConvalidated || 
+                studentCG['Productos Culinarios']?.isConvalidated ||
+                studentCG['productos culinarios']?.isConvalidated
+            );
         }
-        return Boolean(courseGrades?.[studentId]?.[moduleKey]?.isConvalidated);
+        if (moduleKey === 'optativa') {
+            return Boolean(
+                studentCG['optativa']?.isConvalidated || 
+                studentCG['Optativa']?.isConvalidated ||
+                studentCG['optativo']?.isConvalidated ||
+                studentCG['Optativo']?.isConvalidated ||
+                studentCG['Cocina Sostenible']?.isConvalidated
+            );
+        }
+        if (moduleKey === 'proyecto') {
+            return Boolean(
+                studentCG['proyecto']?.isConvalidated || 
+                studentCG['Proyecto']?.isConvalidated || 
+                studentCG['intermodular']?.isConvalidated || 
+                studentCG['Intermodular']?.isConvalidated || 
+                studentCG['Proyecto Intermodular']?.isConvalidated ||
+                studentCG['proyecto intermodular']?.isConvalidated
+            );
+        }
+        return false;
     }, [femConfigs, courseGrades]);
 
     const value: AppContextType = {
