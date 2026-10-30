@@ -26,9 +26,13 @@ const drawDocumentHeaderAndFooter = (
     const pageMargin = 14;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const logoSize = 12;
+    const logoSize = 13;
+    const totalPages = (doc as any).internal.getNumberOfPages();
 
-    // Logos
+    // 1. Draw main header strictly on Page 1
+    doc.setPage(1);
+
+    // Logos on Page 1
     if (instituteData.logo) {
         addImageToPdf(doc, instituteData.logo, pageMargin, pageMargin - 3, logoSize, logoSize);
     }
@@ -36,43 +40,59 @@ const drawDocumentHeaderAndFooter = (
         addImageToPdf(doc, teacherData.logo, pageWidth - pageMargin - logoSize, pageMargin - 3, logoSize, logoSize);
     }
 
-    // Top texts
-    doc.setFontSize(9);
-    doc.setTextColor(90);
+    // Top texts (Center name and Teacher/Department)
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 116, 139);
     doc.setFont('helvetica', 'normal');
     doc.text(instituteData.name || 'Instituto de Formación Profesional', pageMargin + logoSize + 4, pageMargin + 2);
     doc.text(teacherData.name || 'Departamento de Hostelería y Cocina', pageWidth - pageMargin - logoSize - 4, pageMargin + 2, { align: 'right' });
 
     // Main Title
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
-    doc.text(mainTitle, pageWidth / 2, pageMargin + 14, { align: 'center' });
+    doc.text(mainTitle, pageWidth / 2, pageMargin + 13, { align: 'center' });
 
     // Subtitle
     if (subtitle) {
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(71, 85, 105);
-        doc.text(subtitle, pageWidth / 2, pageMargin + 20, { align: 'center' });
+        doc.text(subtitle, pageWidth / 2, pageMargin + 19, { align: 'center' });
     }
 
-    // Divider
+    // Divider line on Page 1
     doc.setDrawColor(203, 213, 225);
     doc.setLineWidth(0.5);
-    doc.line(pageMargin, pageMargin + 24, pageWidth - pageMargin, pageMargin + 24);
+    doc.line(pageMargin, pageMargin + 23, pageWidth - pageMargin, pageMargin + 23);
 
-    // Footer on all pages
-    const totalPages = (doc as any).internal.getNumberOfPages();
+    // 2. Compact running header on pages 2..totalPages (if multi-page)
+    for (let i = 2; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(100, 116, 139);
+        doc.text(mainTitle, pageMargin, 11);
+        if (subtitle) {
+            doc.setFont('helvetica', 'normal');
+            doc.text(subtitle, pageWidth - pageMargin, 11, { align: 'right' });
+        }
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
+        doc.line(pageMargin, 13.5, pageWidth - pageMargin, 13.5);
+    }
+
+    // 3. Footer on all pages
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setDrawColor(226, 232, 240);
-        doc.line(pageMargin, pageHeight - 12, pageWidth - pageMargin, pageHeight - 12);
-        doc.setFontSize(8);
+        doc.setLineWidth(0.4);
+        doc.line(pageMargin, pageHeight - 11, pageWidth - pageMargin, pageHeight - 11);
+        doc.setFontSize(7.5);
         doc.setTextColor(148, 163, 184);
-        doc.text(`${instituteData.name || 'Instituto'} | Servicio Gastronómico`, pageMargin, pageHeight - 7);
-        doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 7, { align: 'center' });
-        doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, pageWidth - pageMargin, pageHeight - 7, { align: 'right' });
+        doc.text(`${instituteData.name || 'Instituto'} | Servicio Gastronómico`, pageMargin, pageHeight - 6.5);
+        doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 6.5, { align: 'center' });
+        doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, pageWidth - pageMargin, pageHeight - 6.5, { align: 'right' });
     }
 };
 
@@ -96,14 +116,15 @@ export const downloadServicePlanningPdf = (params: {
     });
 
     const pageMargin = 14;
+    const pageHeight = doc.internal.pageSize.getHeight();
     const formattedDate = new Date(service.date.replace(/-/g, '/')).toLocaleDateString('es-ES', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
     const trimesterLabel = service.trimester ? service.trimester.toUpperCase() : 'T1';
 
-    let currentY = 44;
+    let currentY = 41;
 
-    // --- Section 1: Puestos Principales de Brigada ---
+    // --- Section 1: Puestos Principales de Brigada (Liderazgo) ---
     const principalRoles = serviceRoles.filter(role => role.type === 'leader');
     const leaderAssignments = principalRoles.map(role => {
         const assignment = service.studentRoles.find(sr => sr.roleId === role.id);
@@ -119,104 +140,184 @@ export const downloadServicePlanningPdf = (params: {
             head: [['Puesto de Mando / Liderazgo', 'Alumno Responsable']],
             body: leaderAssignments,
             startY: currentY,
-            margin: { left: pageMargin, right: pageMargin },
+            margin: { top: 18, bottom: 15, left: pageMargin, right: pageMargin },
             headStyles: { fillColor: [44, 62, 80], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-            styles: { fontSize: 8.5, cellPadding: 2.5 },
+            styles: { fontSize: 8.5, cellPadding: 2.2 },
+            columnStyles: { 0: { cellWidth: 55, fontStyle: 'bold' } },
             theme: 'grid'
         });
         currentY = (doc as any).lastAutoTable.finalY + 6;
     }
 
-    // --- Section 2: Distribución y Menú / Platos ---
+    // --- Section 2: Cuadrante de Brigada Separado por Grupos con sus Platos Asignados ---
     if (service.type === 'agrupacion') {
-        const agrupacionesRows: any[] = [];
         (service.agrupaciones || []).forEach((agrup, idx) => {
             const assignedStudents = students
                 .filter(s => agrup.studentIds.includes(s.id))
                 .sort((a, b) => a.apellido1.localeCompare(b.apellido1));
             
-            const studentListStr = assignedStudents.map(s => {
+            const studentRows = assignedStudents.map((s, sIdx) => {
                 const roleId = service.studentRoles.find(sr => sr.studentId === s.id)?.roleId;
-                const roleName = serviceRoles.find(r => r.id === roleId)?.name;
-                return roleName ? `${s.apellido1}, ${s.nombre} (${roleName})` : `${s.apellido1}, ${s.nombre}`;
-            }).join('\n') || 'Sin alumnos';
+                const roleName = serviceRoles.find(r => r.id === roleId)?.name || 'Cocinero de partida';
+                return [
+                    `${sIdx + 1}`,
+                    `${s.apellido1} ${s.apellido2}, ${s.nombre}`,
+                    roleName
+                ];
+            });
 
-            agrupacionesRows.push([
-                `${idx + 1}. ${agrup.name}`,
-                `${assignedStudents.length} alumnos`,
-                studentListStr
-            ]);
-        });
+            if (currentY > pageHeight - 45) {
+                doc.addPage();
+                currentY = 20;
+            }
 
-        autoTable(doc, {
-            head: [['Partida / Elaboración', 'Nº Alumnos', 'Alumnos y Puestos Asignados']],
-            body: agrupacionesRows,
-            startY: currentY,
-            margin: { left: pageMargin, right: pageMargin },
-            headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-            styles: { fontSize: 8.5, cellPadding: 2.5 },
-            columnStyles: { 0: { cellWidth: 50, fontStyle: 'bold' }, 1: { cellWidth: 25 } },
-            theme: 'grid'
-        });
-        currentY = (doc as any).lastAutoTable.finalY + 6;
-    } else {
-        // Normal type: Comedor & Takeaway
-        const comedorGroups = practiceGroups.filter(g => service.assignedGroups.comedor.includes(g.id)).map(g => g.name).join(', ') || 'Ninguno';
-        const takeawayGroups = practiceGroups.filter(g => service.assignedGroups.takeaway.includes(g.id)).map(g => g.name).join(', ') || 'Ninguno';
-
-        const elaborationsRows: any[] = [];
-        service.elaborations.comedor.forEach((elab, i) => {
-            const group = practiceGroups.find(g => g.id === elab.responsibleGroupId);
-            elaborationsRows.push(['Comedor', `${i + 1}. ${elab.name}`, group ? group.name : 'Sin asignar']);
-        });
-        service.elaborations.takeaway.forEach((elab, i) => {
-            const group = practiceGroups.find(g => g.id === elab.responsibleGroupId);
-            elaborationsRows.push(['Take Away', `${i + 1}. ${elab.name}`, group ? group.name : 'Sin asignar']);
-        });
-
-        if (elaborationsRows.length > 0) {
             autoTable(doc, {
-                head: [['Área de Servicio', 'Plato / Elaboración', 'Grupo Responsable']],
-                body: elaborationsRows,
+                head: [
+                    [{ content: `PARTIDA / AGRUPACIÓN ${idx + 1}: ${agrup.name.toUpperCase()}`, colSpan: 3, styles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold', fontSize: 9.5 } }],
+                    ['#', 'Alumno', 'Puesto / Responsabilidad']
+                ],
+                body: studentRows.length > 0 ? studentRows : [['-', 'Sin alumnos asignados a esta agrupación', '-']],
                 startY: currentY,
-                margin: { left: pageMargin, right: pageMargin },
-                headStyles: { fillColor: [39, 174, 96], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-                styles: { fontSize: 8.5, cellPadding: 2.5 },
+                margin: { top: 18, bottom: 15, left: pageMargin, right: pageMargin },
+                headStyles: { fillColor: [52, 73, 94], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+                styles: { fontSize: 8, cellPadding: 2 },
+                columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { fontStyle: 'bold' } },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
                 theme: 'grid'
             });
             currentY = (doc as any).lastAutoTable.finalY + 6;
+        });
+    } else {
+        // Normal type: Por grupos de práctica asignados
+        const assignedGroupIds = Array.from(new Set([
+            ...(service.assignedGroups?.comedor || []),
+            ...(service.assignedGroups?.takeaway || [])
+        ]));
+
+        let groupsToRender = practiceGroups
+            .filter(g => assignedGroupIds.includes(g.id))
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+        // Fallback if no assigned groups explicitly selected
+        if (groupsToRender.length === 0) {
+            groupsToRender = practiceGroups.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
         }
 
-        // Section 3: Cuadrante de alumnos por grupo y puesto
-        const assignedGroupIds = [...service.assignedGroups.comedor, ...service.assignedGroups.takeaway];
-        const assignedGroups = practiceGroups.filter(g => assignedGroupIds.includes(g.id)).sort((a, b) => a.name.localeCompare(b.name));
+        groupsToRender.forEach(group => {
+            const isComedor = (service.assignedGroups?.comedor || []).includes(group.id);
+            const isTakeaway = (service.assignedGroups?.takeaway || []).includes(group.id);
+            const areaLabel = isComedor && isTakeaway ? 'Comedor y Take Away' : isComedor ? 'Comedor' : isTakeaway ? 'Take Away' : 'Cocina';
 
-        const studentRows: any[] = [];
-        assignedGroups.forEach(group => {
-            const area = service.assignedGroups.comedor.includes(group.id) ? 'Comedor' : 'Take Away';
-            const studentsInGroup = students.filter(s => group.studentIds.includes(s.id)).sort((a, b) => a.apellido1.localeCompare(b.apellido1));
-            
-            studentsInGroup.forEach(student => {
-                const roleId = service.studentRoles.find(sr => sr.studentId === student.id)?.roleId;
+            // Alumnos del grupo con sus puestos
+            const groupStudents = students
+                .filter(s => group.studentIds.includes(s.id))
+                .sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+
+            const studentRows = groupStudents.map((s, sIdx) => {
+                const roleId = service.studentRoles.find(sr => sr.studentId === s.id)?.roleId;
                 const roleName = serviceRoles.find(r => r.id === roleId)?.name || 'Cocinero de partida';
-                studentRows.push([
-                    `${student.apellido1} ${student.apellido2}, ${student.nombre}`,
-                    group.name,
-                    area,
+                return [
+                    `${sIdx + 1}`,
+                    `${s.apellido1} ${s.apellido2}, ${s.nombre}`,
                     roleName
-                ]);
+                ];
             });
+
+            // Platos / elaboraciones asignadas a este grupo
+            const groupElaborations: { name: string; area: string }[] = [];
+            (service.elaborations?.comedor || []).forEach(e => {
+                if (e.responsibleGroupId === group.id) {
+                    groupElaborations.push({ name: e.name, area: 'Comedor' });
+                }
+            });
+            (service.elaborations?.takeaway || []).forEach(e => {
+                if (e.responsibleGroupId === group.id) {
+                    groupElaborations.push({ name: e.name, area: 'Take Away' });
+                }
+            });
+
+            // Si queda poco espacio para empezar este grupo, saltar de página
+            if (currentY > pageHeight - 50) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            // 1. Tabla de Alumnos del Grupo
+            autoTable(doc, {
+                head: [
+                    [{ content: `${group.name.toUpperCase()}  —  Área: ${areaLabel.toUpperCase()}`, colSpan: 3, styles: { fillColor: [44, 62, 80], textColor: 255, fontStyle: 'bold', fontSize: 9.5 } }],
+                    ['#', 'Alumno', 'Puesto / Responsabilidad']
+                ],
+                body: studentRows.length > 0 ? studentRows : [['-', 'Sin alumnos registrados en este grupo', '-']],
+                startY: currentY,
+                margin: { top: 18, bottom: 15, left: pageMargin, right: pageMargin },
+                headStyles: { fillColor: [52, 73, 94], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+                styles: { fontSize: 8, cellPadding: 2 },
+                columnStyles: {
+                    0: { cellWidth: 10, halign: 'center' },
+                    1: { cellWidth: 110, fontStyle: 'bold' }
+                },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                theme: 'grid'
+            });
+            currentY = (doc as any).lastAutoTable.finalY + 1.5;
+
+            // 2. Tabla de Platos / Elaboraciones Asignadas a este Grupo (directamente debajo)
+            const dishesRows = groupElaborations.length > 0
+                ? groupElaborations.map((e, eIdx) => [`${eIdx + 1}`, e.name, e.area])
+                : [['-', 'Sin platos asignados específicamente a este grupo', '-']];
+
+            autoTable(doc, {
+                head: [
+                    [{ content: `Platos / Elaboraciones asignadas a ${group.name}`, colSpan: 3, styles: { fillColor: [39, 174, 96], textColor: 255, fontStyle: 'bold', fontSize: 8.5 } }],
+                    ['#', 'Plato / Elaboración', 'Área']
+                ],
+                body: dishesRows,
+                startY: currentY,
+                margin: { top: 18, bottom: 15, left: pageMargin, right: pageMargin },
+                headStyles: { fillColor: [46, 125, 50], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+                styles: { fontSize: 8, cellPadding: 2 },
+                columnStyles: {
+                    0: { cellWidth: 10, halign: 'center' },
+                    2: { cellWidth: 30, halign: 'center' }
+                },
+                alternateRowStyles: { fillColor: [244, 249, 245] },
+                theme: 'grid'
+            });
+            currentY = (doc as any).lastAutoTable.finalY + 6;
         });
 
-        if (studentRows.length > 0) {
+        // Platos sin grupo asignado (si los hubiera)
+        const renderedGroupIds = new Set(groupsToRender.map(g => g.id));
+        const unassignedElabs: { name: string; area: string }[] = [];
+        (service.elaborations?.comedor || []).forEach(e => {
+            if (!e.responsibleGroupId || !renderedGroupIds.has(e.responsibleGroupId)) {
+                unassignedElabs.push({ name: e.name, area: 'Comedor' });
+            }
+        });
+        (service.elaborations?.takeaway || []).forEach(e => {
+            if (!e.responsibleGroupId || !renderedGroupIds.has(e.responsibleGroupId)) {
+                unassignedElabs.push({ name: e.name, area: 'Take Away' });
+            }
+        });
+
+        if (unassignedElabs.length > 0) {
+            if (currentY > pageHeight - 40) {
+                doc.addPage();
+                currentY = 20;
+            }
             autoTable(doc, {
-                head: [['Alumno', 'Grupo', 'Área', 'Puesto / Responsabilidad']],
-                body: studentRows,
+                head: [
+                    [{ content: 'Otras Elaboraciones Generales / Sin Grupo Asignado', colSpan: 3, styles: { fillColor: [120, 144, 156], textColor: 255, fontStyle: 'bold', fontSize: 8.5 } }],
+                    ['#', 'Plato / Elaboración', 'Área']
+                ],
+                body: unassignedElabs.map((e, idx) => [`${idx + 1}`, e.name, e.area]),
                 startY: currentY,
-                margin: { left: pageMargin, right: pageMargin },
-                headStyles: { fillColor: [52, 73, 94], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+                margin: { top: 18, bottom: 15, left: pageMargin, right: pageMargin },
+                headStyles: { fillColor: [90, 110, 120], textColor: 255, fontStyle: 'bold', fontSize: 8 },
                 styles: { fontSize: 8, cellPadding: 2 },
-                theme: 'striped'
+                columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 2: { cellWidth: 30, halign: 'center' } },
+                theme: 'grid'
             });
         }
     }
@@ -348,7 +449,7 @@ export const downloadServiceEvaluationPdf = (params: {
         head: [['Alumno', 'Partida / Grupo', 'Puesto', 'Asistencia', 'Nota Indiv. (60%)', 'Nota Grupo (40%)', 'Nota Final', 'Observaciones']],
         body: evaluationRows,
         startY: currentY,
-        margin: { left: pageMargin, right: pageMargin },
+        margin: { top: 18, bottom: 15, left: pageMargin, right: pageMargin },
         headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: {
@@ -400,7 +501,7 @@ export const downloadServiceEvaluationPdf = (params: {
             // Check if page needs break
             if (currentY > 150) {
                 doc.addPage();
-                currentY = 34;
+                currentY = 20;
             }
 
             doc.setFontSize(11);
@@ -413,7 +514,7 @@ export const downloadServiceEvaluationPdf = (params: {
                 head: [['Día Previo', 'Alumno', 'Partida / Grupo', 'Asistencia', 'Requisitos Previos', 'Puntos Conducta', 'Observaciones']],
                 body: preServiceRows,
                 startY: currentY,
-                margin: { left: pageMargin, right: pageMargin },
+                margin: { top: 18, bottom: 15, left: pageMargin, right: pageMargin },
                 headStyles: { fillColor: [142, 68, 173], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
                 styles: { fontSize: 7.5, cellPadding: 2 },
                 theme: 'grid'
