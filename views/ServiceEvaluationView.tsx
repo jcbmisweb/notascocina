@@ -162,12 +162,12 @@ const ServiceDayIndividualEvaluationTable: React.FC<{
                     <tr>
                         <th className="p-2 border font-semibold text-gray-600 w-1/4 text-left">Criterio</th>
                         {studentsInGroup.map(s => {
-                            const roleId = service.studentRoles.find(sr => sr.studentId === s.id)?.roleId;
-                            const roleName = serviceRoles.find(r => r.id === roleId)?.name;
+                            const roleId = (service.studentRoles || []).find(sr => sr.studentId === s.id)?.roleId;
+                            const roleName = (serviceRoles || []).find(r => r.id === roleId)?.name;
                             return (
                             <th key={s.id} className="p-2 border font-semibold text-gray-600 truncate">
                                 {roleName && <div className="text-[10px] font-normal text-blue-600 uppercase tracking-wider mb-0.5">{roleName}</div>}
-                                {s.apellido1} {s.nombre.charAt(0)}.
+                                {s.apellido1 || ''} {(s.nombre || '').charAt(0)}.
                             </th>
                         )})}
                     </tr>
@@ -221,7 +221,7 @@ const ServiceDayIndividualEvaluationTable: React.FC<{
                         <td className="p-2 border text-left">TOTAL</td>
                         {studentsInGroup.map(s => (
                             <td key={s.id} className="p-2 border text-center">
-                                {totals[s.id].toFixed(2)} / {INDIVIDUAL_EVALUATION_ITEMS.reduce((acc, item) => acc + item.maxScore, 0).toFixed(2)}
+                                {(totals[s.id] ?? 0).toFixed(2)} / {INDIVIDUAL_EVALUATION_ITEMS.reduce((acc, item) => acc + item.maxScore, 0).toFixed(2)}
                             </td>
                         ))}
                     </tr>
@@ -616,24 +616,33 @@ const ServiceEvaluationView: React.FC<ServiceEvaluationViewProps> = ({ service, 
                                  </tr>
                              </thead>
                              <tbody>
-                                 {GROUP_EVALUATION_ITEMS.map((item, itemIndex) => (<tr key={item.id}><td className="p-2 border text-left">{item.label}</td>{evaluationUnits.map(unit => {const groupEval = evaluation.serviceDay.groupScores[unit.id]; return (<td key={unit.id} className="p-1 border align-middle"><input type="number" step="0.1" min="0" max={item.maxScore} value={groupEval?.scores[itemIndex] ?? ''} onChange={e => handleNumericInputChange(e, item.maxScore, (value) => {
-                                     // Correct type in callback to resolve indexing problems
-                                     deepCloneAndUpdate((draft: ServiceEvaluation) => {if (!draft.serviceDay.groupScores[unit.id]) draft.serviceDay.groupScores[unit.id] = { scores: Array(GROUP_EVALUATION_ITEMS.length).fill(null), observations: ''}; draft.serviceDay.groupScores[unit.id]!.scores[itemIndex] = value;})})} placeholder={`max: ${item.maxScore.toFixed(2)}`} className="w-full text-center p-1.5 rounded-md border-gray-300 placeholder-gray-300 disabled:bg-gray-100" disabled={isLocked}/></td>)})}</tr>))}
+                                 {GROUP_EVALUATION_ITEMS.map((item, itemIndex) => (<tr key={item.id}><td className="p-2 border text-left">{item.label}</td>{evaluationUnits.map(unit => {const groupEval = evaluation?.serviceDay?.groupScores?.[unit.id]; return (<td key={unit.id} className="p-1 border align-middle"><input type="number" step="0.1" min="0" max={item.maxScore} value={groupEval?.scores?.[itemIndex] ?? ''} onChange={e => handleNumericInputChange(e, item.maxScore, (value) => {
+                                      deepCloneAndUpdate((draft: ServiceEvaluation) => {
+                                          if (!draft.serviceDay) draft.serviceDay = { individualScores: {}, groupScores: {} };
+                                          if (!draft.serviceDay.groupScores) draft.serviceDay.groupScores = {};
+                                          if (!draft.serviceDay.groupScores[unit.id]) draft.serviceDay.groupScores[unit.id] = { scores: Array(GROUP_EVALUATION_ITEMS.length).fill(null), observations: ''};
+                                          if (!draft.serviceDay.groupScores[unit.id].scores) draft.serviceDay.groupScores[unit.id].scores = Array(GROUP_EVALUATION_ITEMS.length).fill(null);
+                                          draft.serviceDay.groupScores[unit.id].scores[itemIndex] = value;
+                                      })})} placeholder={`max: ${item.maxScore.toFixed(2)}`} className="w-full text-center p-1.5 rounded-md border-gray-300 placeholder-gray-300 disabled:bg-gray-100" disabled={isLocked}/></td>)})}</tr>))}
                              </tbody>
                              <tfoot>
                                  <tr className="bg-gray-100 font-bold">
                                      <td className="p-2 border text-left">TOTAL</td>
                                      {evaluationUnits.map(unit => { 
-                                         const scores = (evaluation.serviceDay.groupScores[unit.id]?.scores?.filter(s => s !== null) as number[]) ?? []; 
+                                         const scores = (evaluation?.serviceDay?.groupScores?.[unit.id]?.scores?.filter(s => s !== null) as number[]) ?? []; 
                                          const total = scores.reduce((sum, s) => sum + (s || 0), 0); 
                                          return <td key={unit.id} className="p-2 border text-center">{total.toFixed(2)} / {GROUP_EVALUATION_ITEMS.reduce((acc, item) => acc + item.maxScore, 0).toFixed(2)}</td>
                                      })}
                                  </tr>
                                  <tr>
                                     <td className="p-2 border text-left font-medium">Observaciones</td>
-                                    {evaluationUnits.map(unit => (<td key={unit.id} className="p-1 border"><textarea value={evaluation.serviceDay.groupScores[unit.id]?.observations || ''} onChange={e => { 
-                                        // Correct type in callback to resolve indexing problems
-                                        deepCloneAndUpdate((draft: ServiceEvaluation) => { if (!draft.serviceDay.groupScores[unit.id]) { draft.serviceDay.groupScores[unit.id] = { scores: Array(GROUP_EVALUATION_ITEMS.length).fill(null), observations: '' }; } draft.serviceDay.groupScores[unit.id]!.observations = e.target.value; }); }} className="w-full h-20 p-1 rounded-md border-gray-200 resize-none disabled:bg-gray-100" placeholder="Anotaciones..." disabled={isLocked}/></td>))}
+                                    {evaluationUnits.map(unit => (<td key={unit.id} className="p-1 border"><textarea value={evaluation?.serviceDay?.groupScores?.[unit.id]?.observations || ''} onChange={e => { 
+                                        deepCloneAndUpdate((draft: ServiceEvaluation) => { 
+                                            if (!draft.serviceDay) draft.serviceDay = { individualScores: {}, groupScores: {} };
+                                            if (!draft.serviceDay.groupScores) draft.serviceDay.groupScores = {};
+                                            if (!draft.serviceDay.groupScores[unit.id]) { draft.serviceDay.groupScores[unit.id] = { scores: Array(GROUP_EVALUATION_ITEMS.length).fill(null), observations: '' }; } 
+                                            draft.serviceDay.groupScores[unit.id].observations = e.target.value; 
+                                        }); }} className="w-full h-20 p-1 rounded-md border-gray-200 resize-none disabled:bg-gray-100" placeholder="Anotaciones..." disabled={isLocked}/></td>))}
                                 </tr>
                              </tfoot>
                          </table>

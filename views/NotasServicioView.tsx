@@ -23,21 +23,22 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
     const [selectedPracticeId, setSelectedPracticeId] = useState<string | null>(null);
 
     const activeStudents = useMemo(() => {
-        return students.filter(s => !isStudentConvalidated(s.id, 'pc'));
+        return (students || []).filter(s => typeof isStudentConvalidated === 'function' ? !isStudentConvalidated(s.id, 'pc') : true);
     }, [students, isStudentConvalidated]);
 
     const sortedServices = useMemo(() => {
-        return [...services].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        return [...(services || [])].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime());
     }, [services]);
 
     const studentGroups = useMemo(() => {
-        const groups = activeStudents.reduce((acc, student) => {
-            (acc[student.grupo] = acc[student.grupo] || []).push(student);
+        const groups = (activeStudents || []).reduce((acc, student) => {
+            const grp = student.grupo || 'Sin Grupo';
+            (acc[grp] = acc[grp] || []).push(student);
             return acc;
         }, {} as Record<string, Student[]>);
 
         Object.keys(groups).forEach(groupName => {
-            groups[groupName].sort((a,b) => a.apellido1.localeCompare(b.apellido1));
+            groups[groupName].sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '') || (a.nombre || '').localeCompare(b.nombre || ''));
         });
         return groups;
     }, [activeStudents]);
@@ -48,19 +49,19 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
             const serviceScores: Record<string, { final: number | null, absent: boolean }> = {};
 
             sortedServices.forEach(service => {
-                const evaluation = serviceEvaluations.find(e => e.serviceId === service.id);
-                const individualEval = evaluation?.serviceDay.individualScores[student.id];
+                const evaluation = (serviceEvaluations || []).find(e => e.serviceId === service.id);
+                const individualEval = evaluation?.serviceDay?.individualScores?.[student.id];
 
                 let studentParticipated = false;
                 let groupEvalSourceId: string | undefined = undefined;
-                const studentPracticeGroup = practiceGroups.find(pg => pg.studentIds.includes(student.id));
+                const studentPracticeGroup = (practiceGroups || []).find(pg => (pg.studentIds || []).includes(student.id));
 
                 if (service.type === 'normal' && studentPracticeGroup) {
-                    studentParticipated = (service.assignedGroups.comedor || []).includes(studentPracticeGroup.id) || 
-                                       (service.assignedGroups.takeaway || []).includes(studentPracticeGroup.id);
+                    studentParticipated = (service.assignedGroups?.comedor || []).includes(studentPracticeGroup.id) || 
+                                       (service.assignedGroups?.takeaway || []).includes(studentPracticeGroup.id);
                     groupEvalSourceId = studentPracticeGroup.id;
                 } else if (service.type === 'agrupacion') {
-                    const studentAgrupacion = (service.agrupaciones || []).find(a => a.studentIds.includes(student.id));
+                    const studentAgrupacion = (service.agrupaciones || []).find(a => (a.studentIds || []).includes(student.id));
                     if (studentAgrupacion) {
                         studentParticipated = true;
                         groupEvalSourceId = studentAgrupacion.id;
@@ -83,7 +84,7 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                 
                 let groupGrade = 0;
                 let hasGroupData = false;
-                if (groupEvalSourceId) {
+                if (groupEvalSourceId && evaluation.serviceDay?.groupScores) {
                     const groupEval = evaluation.serviceDay.groupScores[groupEvalSourceId];
                     if (groupEval) {
                         hasGroupData = groupEval.scores?.some(s => s !== null);
@@ -277,7 +278,7 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                                             <th key={service.id} rowSpan={2} className="p-2 border font-semibold text-gray-600 min-w-[120px]">
                                                 <button onClick={() => onNavigateToService(service.id, 'evaluation')} className="hover:text-blue-600 w-full">
                                                     <span className="font-bold">{service.name}</span><br />
-                                                    <span className="font-normal text-gray-500">{new Date(service.date.replace(/-/g, '/')).toLocaleDateString('es-ES')}</span>
+                                                    <span className="font-normal text-gray-500">{service.date ? new Date(service.date.replace(/-/g, '/')).toLocaleDateString('es-ES') : 'Sin fecha'}</span>
                                                 </button>
                                             </th>
                                         ))}
@@ -296,7 +297,7 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                                                 const averages = calculatedStudentGrades[student.id]?.serviceAverages || { t1: null, t2: null, t3: null };
                                                 return (
                                                 <tr key={student.id} className={`group ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-blue-50`}>
-                                                    <td className={`p-1 border text-left font-semibold text-gray-800 w-48 sticky left-0 group-hover:bg-blue-50 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</td>
+                                                    <td className={`p-1 border text-left font-semibold text-gray-800 w-48 sticky left-0 group-hover:bg-blue-50 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</td>
                                                     {sortedServices.map(service => {
                                                         const scoreInfo = scores[service.id];
                                                         const finalScore = scoreInfo?.final;
@@ -340,7 +341,7 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                                 <tbody>
                                     {activeStudents.map(student => (
                                         <tr key={student.id} className="hover:bg-gray-50">
-                                            <td className="p-2 border text-left font-medium text-gray-800">{student.apellido1} {student.apellido2}, {student.nombre}</td>
+                                            <td className="p-2 border text-left font-medium text-gray-800">{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</td>
                                             {sortedServices.map(s => {
                                                 const evalData = serviceEvaluations.find(e => e.serviceId === s.id);
                                                 // Find any pre-service day eval for this service

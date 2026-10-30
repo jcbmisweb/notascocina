@@ -61,7 +61,7 @@ const AppContent: React.FC = () => {
     const renderView = () => {
         switch (activeView) {
             case 'dashboard':
-                return <DashboardView onNavigate={setActiveView} />;
+                return <DashboardView onNavigate={setActiveView} onNavigateToService={handleNavigateToService} />;
             case 'alumnos':
                 return <AlumnosView />;
             case 'gestion-academica':

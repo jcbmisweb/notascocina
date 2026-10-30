@@ -117,21 +117,21 @@ export const downloadServicePlanningPdf = (params: {
 
     const pageMargin = 14;
     const pageHeight = doc.internal.pageSize.getHeight();
-    const formattedDate = new Date(service.date.replace(/-/g, '/')).toLocaleDateString('es-ES', {
+    const formattedDate = service.date ? new Date(service.date.replace(/-/g, '/')).toLocaleDateString('es-ES', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
+    }) : 'Fecha no especificada';
     const trimesterLabel = service.trimester ? service.trimester.toUpperCase() : 'T1';
 
     let currentY = 41;
 
     // --- Section 1: Puestos Principales de Brigada (Liderazgo) ---
-    const principalRoles = serviceRoles.filter(role => role.type === 'leader');
+    const principalRoles = (serviceRoles || []).filter(role => role.type === 'leader');
     const leaderAssignments = principalRoles.map(role => {
-        const assignment = service.studentRoles.find(sr => sr.roleId === role.id);
-        const student = assignment ? students.find(s => s.id === assignment.studentId) : null;
+        const assignment = (service.studentRoles || []).find(sr => sr.roleId === role.id);
+        const student = assignment ? (students || []).find(s => s.id === assignment.studentId) : null;
         return [
             role.name,
-            student ? `${student.apellido1} ${student.apellido2}, ${student.nombre}` : 'Sin asignar'
+            student ? `${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim() : 'Sin asignar'
         ];
     });
 
@@ -152,16 +152,16 @@ export const downloadServicePlanningPdf = (params: {
     // --- Section 2: Cuadrante de Brigada Separado por Grupos con sus Platos Asignados ---
     if (service.type === 'agrupacion') {
         (service.agrupaciones || []).forEach((agrup, idx) => {
-            const assignedStudents = students
-                .filter(s => agrup.studentIds.includes(s.id))
-                .sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+            const assignedStudents = (students || [])
+                .filter(s => (agrup.studentIds || []).includes(s.id))
+                .sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || ''));
             
             const studentRows = assignedStudents.map((s, sIdx) => {
-                const roleId = service.studentRoles.find(sr => sr.studentId === s.id)?.roleId;
-                const roleName = serviceRoles.find(r => r.id === roleId)?.name || 'Cocinero de partida';
+                const roleId = (service.studentRoles || []).find(sr => sr.studentId === s.id)?.roleId;
+                const roleName = (serviceRoles || []).find(r => r.id === roleId)?.name || 'Cocinero de partida';
                 return [
                     `${sIdx + 1}`,
-                    `${s.apellido1} ${s.apellido2}, ${s.nombre}`,
+                    `${s.apellido1 || ''} ${s.apellido2 || ''}, ${s.nombre || ''}`.trim(),
                     roleName
                 ];
             });
@@ -173,7 +173,7 @@ export const downloadServicePlanningPdf = (params: {
 
             autoTable(doc, {
                 head: [
-                    [{ content: `PARTIDA / AGRUPACIÓN ${idx + 1}: ${agrup.name.toUpperCase()}`, colSpan: 3, styles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold', fontSize: 9.5 } }],
+                    [{ content: `PARTIDA / AGRUPACIÓN ${idx + 1}: ${(agrup.name || '').toUpperCase()}`, colSpan: 3, styles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold', fontSize: 9.5 } }],
                     ['#', 'Alumno', 'Puesto / Responsabilidad']
                 ],
                 body: studentRows.length > 0 ? studentRows : [['-', 'Sin alumnos asignados a esta agrupación', '-']],
@@ -194,13 +194,13 @@ export const downloadServicePlanningPdf = (params: {
             ...(service.assignedGroups?.takeaway || [])
         ]));
 
-        let groupsToRender = practiceGroups
+        let groupsToRender = (practiceGroups || [])
             .filter(g => assignedGroupIds.includes(g.id))
-            .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
 
         // Fallback if no assigned groups explicitly selected
         if (groupsToRender.length === 0) {
-            groupsToRender = practiceGroups.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+            groupsToRender = (practiceGroups || []).sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
         }
 
         groupsToRender.forEach(group => {
@@ -209,16 +209,16 @@ export const downloadServicePlanningPdf = (params: {
             const areaLabel = isComedor && isTakeaway ? 'Comedor y Take Away' : isComedor ? 'Comedor' : isTakeaway ? 'Take Away' : 'Cocina';
 
             // Alumnos del grupo con sus puestos
-            const groupStudents = students
-                .filter(s => group.studentIds.includes(s.id))
-                .sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+            const groupStudents = (students || [])
+                .filter(s => (group.studentIds || []).includes(s.id))
+                .sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || ''));
 
             const studentRows = groupStudents.map((s, sIdx) => {
-                const roleId = service.studentRoles.find(sr => sr.studentId === s.id)?.roleId;
-                const roleName = serviceRoles.find(r => r.id === roleId)?.name || 'Cocinero de partida';
+                const roleId = (service.studentRoles || []).find(sr => sr.studentId === s.id)?.roleId;
+                const roleName = (serviceRoles || []).find(r => r.id === roleId)?.name || 'Cocinero de partida';
                 return [
                     `${sIdx + 1}`,
-                    `${s.apellido1} ${s.apellido2}, ${s.nombre}`,
+                    `${s.apellido1 || ''} ${s.apellido2 || ''}, ${s.nombre || ''}`.trim(),
                     roleName
                 ];
             });
@@ -356,9 +356,9 @@ export const downloadServiceEvaluationPdf = (params: {
     });
 
     const pageMargin = 14;
-    const formattedDate = new Date(service.date.replace(/-/g, '/')).toLocaleDateString('es-ES', {
+    const formattedDate = service.date ? new Date(service.date.replace(/-/g, '/')).toLocaleDateString('es-ES', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
+    }) : 'Fecha no especificada';
     const trimesterLabel = service.trimester ? service.trimester.toUpperCase() : 'T1';
 
     let currentY = 44;
@@ -371,28 +371,31 @@ export const downloadServiceEvaluationPdf = (params: {
 
     if (service.type === 'agrupacion') {
         (service.agrupaciones || []).forEach(agrup => {
-            const agrupStudents = students.filter(s => agrup.studentIds.includes(s.id));
+            const agrupStudents = (students || []).filter(s => (agrup.studentIds || []).includes(s.id));
             agrupStudents.forEach(st => {
-                const roleId = service.studentRoles.find(sr => sr.studentId === st.id)?.roleId;
-                const role = serviceRoles.find(r => r.id === roleId);
+                const roleId = (service.studentRoles || []).find(sr => sr.studentId === st.id)?.roleId;
+                const role = (serviceRoles || []).find(r => r.id === roleId);
                 participatingStudents.push({
                     student: st,
-                    groupName: agrup.name,
+                    groupName: agrup.name || 'Agrupación',
                     roleName: role ? role.name : 'Cocinero',
                     groupId: agrup.id
                 });
             });
         });
     } else {
-        const assignedGroupIds = [...service.assignedGroups.comedor, ...service.assignedGroups.takeaway];
-        practiceGroups.filter(g => assignedGroupIds.includes(g.id)).forEach(group => {
-            const groupStudents = students.filter(s => group.studentIds.includes(s.id));
+        const assignedGroupIds = [
+            ...(service.assignedGroups?.comedor || []),
+            ...(service.assignedGroups?.takeaway || [])
+        ];
+        (practiceGroups || []).filter(g => assignedGroupIds.includes(g.id)).forEach(group => {
+            const groupStudents = (students || []).filter(s => (group.studentIds || []).includes(s.id));
             groupStudents.forEach(st => {
-                const roleId = service.studentRoles.find(sr => sr.studentId === st.id)?.roleId;
-                const role = serviceRoles.find(r => r.id === roleId);
+                const roleId = (service.studentRoles || []).find(sr => sr.studentId === st.id)?.roleId;
+                const role = (serviceRoles || []).find(r => r.id === roleId);
                 participatingStudents.push({
                     student: st,
-                    groupName: group.name,
+                    groupName: group.name || 'Grupo',
                     roleName: role ? role.name : 'Cocinero',
                     groupId: group.id
                 });
@@ -400,11 +403,11 @@ export const downloadServiceEvaluationPdf = (params: {
         });
     }
 
-    participatingStudents.sort((a, b) => a.student.apellido1.localeCompare(b.student.apellido1));
+    participatingStudents.sort((a, b) => (a.student.apellido1 || '').localeCompare(b.student.apellido1 || ''));
 
     participatingStudents.forEach(({ student, groupName, roleName, groupId }) => {
-        const indEval = evaluation.serviceDay.individualScores[student.id];
-        const groupEval = evaluation.serviceDay.groupScores[groupId];
+        const indEval = evaluation?.serviceDay?.individualScores?.[student.id];
+        const groupEval = evaluation?.serviceDay?.groupScores?.[groupId];
 
         const isPresent = indEval ? (indEval.attendance ?? true) : true;
         let groupGrade = 0;
@@ -531,6 +534,6 @@ export const downloadServiceEvaluationPdf = (params: {
         instituteData
     );
 
-    const safeFilename = `Evaluacion_${service.name.replace(/[^a-zA-Z0-9_-]/g, '_')}_${service.date}.pdf`;
+    const safeFilename = `Evaluacion_${(service.name || 'Servicio').replace(/[^a-zA-Z0-9_-]/g, '_')}_${service.date || 'fecha'}.pdf`;
     doc.save(safeFilename);
 };

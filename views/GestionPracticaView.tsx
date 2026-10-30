@@ -311,25 +311,60 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
     useEffect(() => {
         if (initialServiceId) {
             setSelectedServiceId(initialServiceId);
-            if (initialServiceTab) setMainTab(initialServiceTab);
+            if (initialServiceTab) {
+                setMainTab(initialServiceTab);
+            }
             clearInitialServiceContext();
+        } else if (!selectedServiceId && services.length > 0) {
+            const sorted = [...services].sort((a, b) => new Date(b.date || '').getTime() - new Date(a.date || '').getTime());
+            setSelectedServiceId(sorted[0].id);
         }
-    }, [initialServiceId, initialServiceTab, clearInitialServiceContext]);
+    }, [initialServiceId, initialServiceTab, clearInitialServiceContext, services, selectedServiceId]);
 
     useEffect(() => {
         if (selectedServiceId) {
             const service = services.find(s => s.id === selectedServiceId);
-            const evaluation = serviceEvaluations.find(e => e.serviceId === selectedServiceId);
-            setEditedService(service ? JSON.parse(JSON.stringify(service)) : null);
-            setEditedEvaluation(evaluation ? JSON.parse(JSON.stringify(evaluation)) : null);
-            if (!initialServiceId) setMainTab('planning');
-            setPlanningSubTab('distribucion');
-            setAgrupacionPlanningSubTab('elaboraciones');
+            if (service) {
+                const cloned: Service = JSON.parse(JSON.stringify(service));
+                if (!cloned.assignedGroups) cloned.assignedGroups = { comedor: [], takeaway: [] };
+                if (!cloned.assignedGroups.comedor) cloned.assignedGroups.comedor = [];
+                if (!cloned.assignedGroups.takeaway) cloned.assignedGroups.takeaway = [];
+                if (!cloned.elaborations) cloned.elaborations = { comedor: [], takeaway: [] };
+                if (!cloned.elaborations.comedor) cloned.elaborations.comedor = [];
+                if (!cloned.elaborations.takeaway) cloned.elaborations.takeaway = [];
+                if (!cloned.studentRoles) cloned.studentRoles = [];
+                if (!cloned.agrupaciones) cloned.agrupaciones = [];
+                setEditedService(cloned);
+
+                const evaluation = serviceEvaluations.find(e => e.serviceId === selectedServiceId);
+                let clonedEval: ServiceEvaluation;
+                if (evaluation) {
+                    clonedEval = JSON.parse(JSON.stringify(evaluation));
+                } else {
+                    clonedEval = {
+                        id: `eval-${service.id}`,
+                        serviceId: service.id,
+                        preService: {},
+                        serviceDay: { groupScores: {}, individualScores: {} }
+                    };
+                }
+                if (!clonedEval.preService) clonedEval.preService = {};
+                if (!clonedEval.serviceDay) clonedEval.serviceDay = { groupScores: {}, individualScores: {} };
+                if (!clonedEval.serviceDay.groupScores) clonedEval.serviceDay.groupScores = {};
+                if (!clonedEval.serviceDay.individualScores) clonedEval.serviceDay.individualScores = {};
+                setEditedEvaluation(clonedEval);
+
+                setPlanningSubTab('distribucion');
+                setAgrupacionPlanningSubTab('elaboraciones');
+            } else {
+                setEditedService(null);
+                setEditedEvaluation(null);
+            }
         } else {
             setEditedService(null);
             setEditedEvaluation(null);
         }
-    }, [selectedServiceId, services, serviceEvaluations, initialServiceId]);
+    }, [selectedServiceId, services, serviceEvaluations]);
     
     const handleCreateService = (trimester: 't1' | 't2' | 't3', type: 'normal' | 'agrupacion') => {
         const newServiceId = contextCreateService(trimester, type);
@@ -464,13 +499,13 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
 
     const groupedServices = useMemo(() => {
         const groups: { t1: Service[], t2: Service[], t3: Service[] } = { t1: [], t2: [], t3: [] };
-        services.forEach(s => {
-            if (s.trimester && groups[s.trimester]) {
-                groups[s.trimester].push(s);
-            }
+        (services || []).forEach(s => {
+            const rawTrim = (s.trimester || 't1').toLowerCase();
+            const trimKey = (rawTrim === 't2' ? 't2' : rawTrim === 't3' ? 't3' : 't1') as 't1' | 't2' | 't3';
+            groups[trimKey].push(s);
         });
         // Sort services within each group by date, descending
-        const sortByDateDesc = (a: Service, b: Service) => new Date(b.date).getTime() - new Date(a.date).getTime();
+        const sortByDateDesc = (a: Service, b: Service) => new Date(b.date || '').getTime() - new Date(a.date || '').getTime();
         groups.t1.sort(sortByDateDesc);
         groups.t2.sort(sortByDateDesc);
         groups.t3.sort(sortByDateDesc);
@@ -489,12 +524,11 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
         });
     };
 
-
-    if (practiceGroups.length === 0 && students.length > 0) {
+    if (practiceGroups.length === 0 && students.length > 0 && services.length === 0) {
         return (
             <div className="text-center p-8 bg-white rounded-lg shadow">
                 <h2 className="text-2xl font-bold text-gray-700">Primero define los grupos de práctica</h2>
-                <p className="text-gray-500 mt-2">No puedes gestionar servicios sin haber creado grupos de alumnos primero.</p>
+                <p className="text-gray-500 mt-2">No puedes crear nuevos servicios sin haber creado grupos de alumnos primero.</p>
             </div>
         );
     }
@@ -572,16 +606,16 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                     <h4 className="text-md font-bold text-gray-700 mb-3">Puestos Principales del Servicio</h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
                         {principalRoles.map(role => {
-                            const assignment = editedService.studentRoles.find(sr => sr.roleId === role.id);
-                            const student = assignment ? students.find(s => s.id === assignment.studentId) : null;
+                            const assignment = (editedService.studentRoles || []).find(sr => sr.roleId === role.id);
+                            const student = assignment ? (students || []).find(s => s.id === assignment.studentId) : null;
                             return (
                                 <div key={role.id} className="flex flex-col">
                                     <span className="text-sm font-semibold text-gray-500">{role.name}</span>
-                                    <span className="text-md font-medium text-gray-800 truncate" title={student ? `${student.nombre} ${student.apellido1}` : 'Sin asignar'}>
-                                        {student ? `${student.nombre} ${student.apellido1} ${student.apellido2}` : <span className="italic text-gray-400">Sin asignar</span>}
+                                    <span className="text-md font-medium text-gray-800 truncate" title={student ? `${student.nombre || ''} ${student.apellido1 || ''}`.trim() : 'Sin asignar'}>
+                                        {student ? `${student.nombre || ''} ${student.apellido1 || ''} ${student.apellido2 || ''}`.trim() : <span className="italic text-gray-400">Sin asignar</span>}
                                     </span>
                                 </div>
-                            )
+                            );
                         })}
                     </div>
                 </div>
@@ -622,9 +656,9 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                                     <h3 className="text-xl font-bold mb-4 text-gray-700">Asignación de Puestos por Elaboración</h3>
                                     <div className="space-y-6">
                                         {(editedService.agrupaciones || []).map((agrupacion, index) => {
-                                            const studentsInAgrupacion = students
-                                                .filter(s => agrupacion.studentIds.includes(s.id))
-                                                .sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+                                            const studentsInAgrupacion = (students || [])
+                                                .filter(s => (agrupacion.studentIds || []).includes(s.id))
+                                                .sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '') || (a.nombre || '').localeCompare(b.nombre || ''));
 
                                             return (
                                                 <div key={agrupacion.id} className="border rounded-lg overflow-hidden">
@@ -642,10 +676,10 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                                                             <tbody>
                                                                 {studentsInAgrupacion.map(student => (
                                                                     <tr key={student.id} className="border-t hover:bg-gray-50">
-                                                                        <td className="px-4 py-2 font-medium text-gray-800">{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</td>
+                                                                        <td className="px-4 py-2 font-medium text-gray-800">{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</td>
                                                                         <td className="px-4 py-2">
                                                                             <select
-                                                                                value={editedService.studentRoles.find(sr => sr.studentId === student.id)?.roleId || ''}
+                                                                                value={(editedService.studentRoles || []).find(sr => sr.studentId === student.id)?.roleId || ''}
                                                                                 onChange={e => handleStudentRoleChange(student.id, e.target.value || null)}
                                                                                 disabled={isLocked}
                                                                                 className="w-full p-1.5 border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 disabled:bg-gray-100"
@@ -680,7 +714,7 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {(['comedor', 'takeaway'] as const).map(area => {
                                     const areaColor = area === 'comedor' ? 'green' : 'blue';
-                                    const assignedGroupIds = editedService.assignedGroups[area];
+                                    const assignedGroupIds = editedService.assignedGroups?.[area] || [];
                                     const availableGroupsForElaboration = practiceGroups.filter(g => assignedGroupIds.includes(g.id));
                                 
                                     return (
@@ -689,7 +723,7 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                                         <div className="space-y-2">{practiceGroups.map(group => (<label key={group.id} className="flex items-center p-3 rounded-md hover:bg-gray-50 cursor-pointer"><input type="checkbox" checked={assignedGroupIds.includes(group.id)} onChange={() => toggleGroupAssignment(area, group.id)} disabled={isLocked} className={`h-4 w-4 rounded border-gray-300 text-${areaColor}-600 focus:ring-${areaColor}-500`}/> <span className="ml-3 text-sm font-medium text-gray-800">{group.name}</span></label>))}</div>
                                         <div className="mt-6 border-t pt-4">
                                             <h4 className={`text-lg font-bold mb-3 text-${areaColor}-600`}>Elaboraciones para {area}</h4>
-                                            <div className="space-y-3 mb-4">{editedService.elaborations[area].map((elab, index) => (<div key={elab.id} className="flex items-center gap-2 text-sm"><span className="font-semibold text-gray-500">{index + 1}.</span><input type="text" value={elab.name} onChange={e => handleUpdateElaboration(area, elab.id, 'name', e.target.value)} disabled={isLocked} className="flex-grow p-1.5 border-gray-300 rounded-md shadow-sm disabled:bg-gray-100"/><select value={elab.responsibleGroupId || ''} onChange={e => handleUpdateElaboration(area, elab.id, 'responsibleGroupId', e.target.value)} disabled={isLocked} className="p-1.5 border-gray-300 rounded-md shadow-sm disabled:bg-gray-100"><option value="">Asignar...</option>{availableGroupsForElaboration.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select><button onClick={() => handleDeleteElaboration(area, elab.id)} disabled={isLocked} className="p-1 text-gray-400 hover:text-red-500 disabled:cursor-not-allowed"><TrashIcon className="w-4 h-4" /></button></div>))}</div>
+                                            <div className="space-y-3 mb-4">{(editedService.elaborations?.[area] || []).map((elab, index) => (<div key={elab.id} className="flex items-center gap-2 text-sm"><span className="font-semibold text-gray-500">{index + 1}.</span><input type="text" value={elab.name} onChange={e => handleUpdateElaboration(area, elab.id, 'name', e.target.value)} disabled={isLocked} className="flex-grow p-1.5 border-gray-300 rounded-md shadow-sm disabled:bg-gray-100"/><select value={elab.responsibleGroupId || ''} onChange={e => handleUpdateElaboration(area, elab.id, 'responsibleGroupId', e.target.value)} disabled={isLocked} className="p-1.5 border-gray-300 rounded-md shadow-sm disabled:bg-gray-100"><option value="">Asignar...</option>{availableGroupsForElaboration.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select><button onClick={() => handleDeleteElaboration(area, elab.id)} disabled={isLocked} className="p-1 text-gray-400 hover:text-red-500 disabled:cursor-not-allowed"><TrashIcon className="w-4 h-4" /></button></div>))}</div>
                                             {!isLocked && (availableGroupsForElaboration.length > 0 ? (<div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md"><input type="text" placeholder="Nombre del nuevo plato" value={newElaboration[area].name} onChange={e => setNewElaboration(p => ({...p, [area]: {...p[area], name: e.target.value}}))} className="flex-grow p-1.5 border-gray-300 rounded-md shadow-sm"/><select value={newElaboration[area].responsibleGroupId} onChange={e => setNewElaboration(p => ({...p, [area]: {...p[area], responsibleGroupId: e.target.value}}))} className="p-1.5 border-gray-300 rounded-md shadow-sm"><option value="">Seleccionar grupo...</option>{availableGroupsForElaboration.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select><button onClick={() => handleAddElaboration(area)} className={`bg-${areaColor}-500 text-white px-3 py-1.5 rounded-md font-semibold hover:bg-${areaColor}-600`}>Añadir</button></div>) : (<p className="text-sm text-gray-500 text-center p-2 bg-gray-50 rounded-md">Asigna al menos un grupo a esta área para poder añadir elaboraciones.</p>))}
                                         </div>
                                     </div>

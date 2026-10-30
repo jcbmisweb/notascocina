@@ -83,8 +83,8 @@ export const ProyectoEvaluacionView: React.FC = () => {
     const studentGroupMap = useMemo(() => {
         const map: Record<string, ProyectoGroup | null> = {};
         activeStudents.forEach(st => { map[st.id] = null; });
-        proyectoGroups.forEach(grp => {
-            grp.studentIds.forEach(stId => {
+        (proyectoGroups || []).forEach(grp => {
+            (grp.studentIds || []).forEach(stId => {
                 if (activeStudentsMap[stId]) {
                     map[stId] = grp;
                 }
@@ -313,7 +313,7 @@ export const ProyectoEvaluacionView: React.FC = () => {
 
     // Filtered students for display
     const sortedStudents = useMemo(() => {
-        return [...activeStudents].sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+        return [...activeStudents].sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || ''));
     }, [activeStudents]);
 
     const filteredStudents = useMemo(() => {

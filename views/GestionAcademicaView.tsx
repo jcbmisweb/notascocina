@@ -119,7 +119,7 @@ const EvaluacionInstrumentosTab: React.FC = () => {
     const sortedStudents = useMemo(() => {
         return [...students]
             .filter(student => !isStudentConvalidated(student.id, selectedModule))
-            .sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+            .sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || ''));
     }, [students, selectedModule, isStudentConvalidated]);
 
     const handleGradeChange = (studentId: string, activityId: string, value: string) => {
@@ -239,7 +239,7 @@ const GestionAcademicaView: React.FC = () => {
             };
 
             students.forEach(student => {
-                const averages = finalGradesAndAverages.studentGrades[student.id].averages;
+                const averages = finalGradesAndAverages.studentGrades[student.id]?.averages || {};
                 const calc = calculatedStudentGrades[student.id];
                 const instGrades = instrumentGrades[student.id] || {};
 
@@ -361,7 +361,7 @@ const GestionAcademicaView: React.FC = () => {
     const [localInstrumentGrades, setLocalInstrumentGrades] = useState(instrumentGrades);
     const [isDirty, setIsDirty] = useState(false);
     
-    const sortedStudents = useMemo(() => [...students].sort((a, b) => a.apellido1.localeCompare(b.apellido1)), [students]);
+    const sortedStudents = useMemo(() => [...students].sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '')), [students]);
     
     useEffect(() => {
         setLocalAcademicGrades(JSON.parse(JSON.stringify(academicGrades)));
@@ -379,7 +379,7 @@ const GestionAcademicaView: React.FC = () => {
         }, {} as Record<string, Student[]>);
 
         Object.keys(studentGroups).forEach(groupName => {
-            studentGroups[groupName].sort((a,b) => a.apellido1.localeCompare(b.apellido1));
+            studentGroups[groupName].sort((a,b) => (a.apellido1 || '').localeCompare(b.apellido1 || ''));
         });
 
         const studentGrades: Record<string, { averages: Record<string, number | null> }> = {};

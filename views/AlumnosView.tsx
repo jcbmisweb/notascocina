@@ -73,10 +73,10 @@ const AlumnosView: React.FC = () => {
       return studentsWithRAProgress;
     }
     return studentsWithRAProgress.filter(student => {
-      const fullName = `${student.nombre} ${student.apellido1} ${student.apellido2}`.toLowerCase();
+      const fullName = `${student.nombre || ''} ${student.apellido1 || ''} ${student.apellido2 || ''}`.toLowerCase();
       return fullName.includes(searchTerm.toLowerCase()) || 
-             student.nre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             student.grupo.toLowerCase().includes(searchTerm.toLowerCase());
+             (student.nre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+             (student.grupo || '').toLowerCase().includes(searchTerm.toLowerCase());
     });
   }, [studentsWithRAProgress, searchTerm]);
 

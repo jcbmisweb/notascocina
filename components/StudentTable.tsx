@@ -28,7 +28,7 @@ const StudentTable: React.FC<StudentTableProps> = ({ students, onViewStudent, on
           <tbody>
             {students.map((student, index) => {
               const { raProgress, courseAverage, ...studentData } = student;
-              const fullName = `${studentData.apellido1} ${studentData.apellido2}, ${studentData.nombre}`.trim();
+              const fullName = `${studentData.apellido1 || ''} ${studentData.apellido2 || ''}, ${studentData.nombre || ''}`.replace(/^ , /, '').trim() || 'Alumno sin nombre';
               const isEven = index % 2 === 0;
               const trBg = isEven ? 'bg-white' : 'bg-gray-50';
               const tdBg = isEven ? 'bg-gray-50' : 'bg-gray-100';
@@ -43,7 +43,7 @@ const StudentTable: React.FC<StudentTableProps> = ({ students, onViewStudent, on
                       <div className="flex items-center">
                         <img 
                           className="w-10 h-10 rounded-full object-cover mr-4" 
-                          src={studentData.fotoUrl} 
+                          src={studentData.fotoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces'} 
                           alt={`Foto de ${fullName}`} 
                         />
                         {fullName}
