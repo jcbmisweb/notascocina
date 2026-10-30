@@ -31,21 +31,21 @@ export const DefinirGruposProyectoView: React.FC = () => {
 
     // Filter active students for Proyecto (exclude convalidated in this module)
     const activeStudents = useMemo(() => {
-        return students.filter(s => !isStudentConvalidated(s.id, 'proyecto'));
+        return (students || []).filter(s => typeof isStudentConvalidated === 'function' ? !isStudentConvalidated(s.id, 'proyecto') : true);
     }, [students, isStudentConvalidated]);
 
     const activeStudentsMap = useMemo(() => {
         const map: Record<string, Student> = {};
-        activeStudents.forEach(s => { map[s.id] = s; });
+        (activeStudents || []).forEach(s => { if (s?.id) map[s.id] = s; });
         return map;
     }, [activeStudents]);
 
     // Assignments map for active students
     const studentAssignments = useMemo(() => {
         const assignments: Record<string, string | null> = {};
-        activeStudents.forEach(s => { assignments[s.id] = null; });
-        proyectoGroups.forEach(g => {
-            g.studentIds.forEach(studentId => {
+        (activeStudents || []).forEach(s => { if (s?.id) assignments[s.id] = null; });
+        (proyectoGroups || []).forEach(g => {
+            (g?.studentIds || []).forEach(studentId => {
                 if (activeStudentsMap[studentId]) {
                     assignments[studentId] = g.id;
                 }
@@ -55,38 +55,43 @@ export const DefinirGruposProyectoView: React.FC = () => {
     }, [proyectoGroups, activeStudents, activeStudentsMap]);
 
     const handleAddGroup = () => {
-        const nextGroupId = (proyectoGroups.length > 0 ? Math.max(...proyectoGroups.map(g => parseInt(g.id, 10) || 0)) : 0) + 1;
+        const numericIds = (proyectoGroups || [])
+            .map(g => parseInt(g.id, 10))
+            .filter(n => !isNaN(n));
+        const nextGroupId = (numericIds.length > 0 ? Math.max(...numericIds) : 0) + 1;
         const newGroup: ProyectoGroup = {
             id: String(nextGroupId),
             name: `Restaurante / Grupo ${nextGroupId}`,
-            color: groupColors[(nextGroupId - 1) % groupColors.length],
+            color: groupColors[(nextGroupId - 1) % groupColors.length] || groupColors[0],
             studentIds: [],
             coordinadorId: null,
         };
-        setProyectoGroups(prev => [...prev, newGroup]);
+        setProyectoGroups(prev => [...(prev || []), newGroup]);
         addToast(`Grupo de Proyecto ${nextGroupId} añadido.`, 'success');
     };
 
     const handleDeleteGroup = (groupId: string) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar este grupo de proyecto? Los alumnos asignados quedarán sin grupo.')) {
-            setProyectoGroups(prev => prev.filter(g => g.id !== groupId));
+            setProyectoGroups(prev => (prev || []).filter(g => g.id !== groupId));
             addToast('Grupo de proyecto eliminado.', 'info');
         }
     };
 
     const handleAssignStudent = (studentId: string, groupId: string | null) => {
         setProyectoGroups(prev => {
-            const newGroups = prev.map(g => {
+            const current = prev || [];
+            const newGroups = current.map(g => {
                 const wasCoordinator = g.coordinadorId === studentId;
                 return {
                     ...g,
-                    studentIds: g.studentIds.filter(id => id !== studentId),
+                    studentIds: (g.studentIds || []).filter(id => id !== studentId),
                     coordinadorId: wasCoordinator ? null : g.coordinadorId
                 };
             });
             if (groupId) {
                 const targetGroup = newGroups.find(g => g.id === groupId);
                 if (targetGroup) {
+                    if (!targetGroup.studentIds) targetGroup.studentIds = [];
                     targetGroup.studentIds.push(studentId);
                 }
             }
@@ -95,7 +100,7 @@ export const DefinirGruposProyectoView: React.FC = () => {
     };
 
     const handleSetCoordinator = (groupId: string, studentId: string | null) => {
-        setProyectoGroups(prev => prev.map(g => {
+        setProyectoGroups(prev => (prev || []).map(g => {
             if (g.id !== groupId) return g;
             const newCoord = g.coordinadorId === studentId ? null : studentId;
             return {
@@ -113,9 +118,9 @@ export const DefinirGruposProyectoView: React.FC = () => {
 
     const filteredStudents = useMemo(() => {
         return [...activeStudents]
-            .sort((a, b) => a.apellido1.localeCompare(b.apellido1))
+            .sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '') || (a.nombre || '').localeCompare(b.nombre || ''))
             .filter(student => {
-                const fullName = `${student.nombre} ${student.apellido1} ${student.apellido2}`.toLowerCase();
+                const fullName = `${student.nombre || ''} ${student.apellido1 || ''} ${student.apellido2 || ''}`.toLowerCase();
                 return fullName.includes(searchTerm.toLowerCase());
             });
     }, [activeStudents, searchTerm]);
@@ -403,8 +408,8 @@ const addImageToPdf = (doc: jsPDF, imageData: string | null | undefined, x: numb
                             <p className="text-xs text-gray-400">Pulsa en "Añadir Restaurante / Equipo" para comenzar.</p>
                         </div>
                     ) : (
-                        proyectoGroups.map(group => {
-                            const members = group.studentIds
+                        (proyectoGroups || []).map(group => {
+                            const members = (group?.studentIds || [])
                                 .map(id => activeStudentsMap[id])
                                 .filter(Boolean) as Student[];
 

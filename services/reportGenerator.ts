@@ -393,15 +393,15 @@ export const generateGroupsPDF = (
     let currentY = 45;
     const studentMap = new Map(students.map(s => [s.id, s]));
 
-    if (practiceGroups.length === 0) {
+    if (!practiceGroups || practiceGroups.length === 0) {
         doc.setFontSize(11).setFont('helvetica', 'italic').text('No hay grupos definidos.', PAGE_MARGIN, currentY);
     } else {
         practiceGroups.forEach((group) => {
-            const members = group.studentIds
+            const members = (group.studentIds || [])
                 .map(id => studentMap.get(id))
                 .filter(Boolean) as Student[];
 
-            members.sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+            members.sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '') || (a.nombre || '').localeCompare(b.nombre || ''));
 
             if (currentY > 240) {
                 doc.addPage();
@@ -415,7 +415,7 @@ export const generateGroupsPDF = (
 
             const body = members.map((m, i) => [
                 i + 1,
-                `${m.apellido1} ${m.apellido2}, ${m.nombre}`,
+                `${m.apellido1 || ''} ${m.apellido2 || ''}, ${m.nombre || ''}`.trim(),
                 m.grupo || '-'
             ]);
 
@@ -433,8 +433,8 @@ export const generateGroupsPDF = (
             currentY = (doc as any).lastAutoTable.finalY + 12;
         });
 
-        const assignedIds = new Set(practiceGroups.flatMap(g => g.studentIds));
-        const unassignedStudents = students.filter(s => !assignedIds.has(s.id));
+        const assignedIds = new Set((practiceGroups || []).flatMap(g => g.studentIds || []));
+        const unassignedStudents = (students || []).filter(s => !assignedIds.has(s.id));
 
         if (unassignedStudents.length > 0) {
             if (currentY > 240) {

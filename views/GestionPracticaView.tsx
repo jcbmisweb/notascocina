@@ -257,13 +257,16 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
         
         let targetStudents: Student[] = [];
         if (editedService.type === 'agrupacion') {
-            const studentIds = (editedService.agrupaciones || []).flatMap(a => a.studentIds);
-            targetStudents = students.filter(s => studentIds.includes(s.id));
+            const studentIds = (editedService.agrupaciones || []).flatMap(a => a.studentIds || []);
+            targetStudents = (students || []).filter(s => studentIds.includes(s.id));
         } else {
-            const assignedGroupIds = [...editedService.assignedGroups.comedor, ...editedService.assignedGroups.takeaway];
-            const assignedGroups = practiceGroups.filter(g => assignedGroupIds.includes(g.id));
-            const studentIds = assignedGroups.flatMap(g => g.studentIds);
-            targetStudents = students.filter(s => studentIds.includes(s.id));
+            const assignedGroupIds = [
+                ...(editedService.assignedGroups?.comedor || []),
+                ...(editedService.assignedGroups?.takeaway || [])
+            ];
+            const assignedGroups = (practiceGroups || []).filter(g => assignedGroupIds.includes(g.id));
+            const studentIds = assignedGroups.flatMap(g => g.studentIds || []);
+            targetStudents = (students || []).filter(s => studentIds.includes(s.id));
         }
 
         if (targetStudents.length === 0) {
@@ -435,11 +438,14 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
 
     const groupedStudentsInService = useMemo(() => {
         if (!editedService) return [];
-        const assignedGroupIds = [...editedService.assignedGroups.comedor, ...editedService.assignedGroups.takeaway];
-        const assignedGroups = practiceGroups.filter(g => assignedGroupIds.includes(g.id)).sort((a, b) => b.name.localeCompare(a.name));
+        const assignedGroupIds = [
+            ...(editedService.assignedGroups?.comedor || []),
+            ...(editedService.assignedGroups?.takeaway || [])
+        ];
+        const assignedGroups = (practiceGroups || []).filter(g => assignedGroupIds.includes(g.id)).sort((a, b) => (b.name || '').localeCompare(a.name || ''));
         return assignedGroups.map(group => ({
             group,
-            students: students.filter(s => group.studentIds.includes(s.id)).sort((a, b) => a.apellido1.localeCompare(b.apellido1) || a.nombre.localeCompare(b.nombre))
+            students: (students || []).filter(s => (group.studentIds || []).includes(s.id)).sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '') || (a.nombre || '').localeCompare(b.nombre || ''))
         }));
     }, [editedService, practiceGroups, students]);
     
@@ -697,12 +703,17 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                                     <table className="min-w-full text-sm">
                                         <thead className="bg-gray-50"><tr><th className="px-4 py-2 text-left font-semibold text-gray-600">Alumno</th><th className="px-4 py-2 text-left font-semibold text-gray-600">Puesto</th></tr></thead>
                                         <tbody>
-                                            {groupedStudentsInService.map(({ group, students: studentsInGroup }) => (
-                                                <React.Fragment key={group.id}>
-                                                    <tr><td colSpan={2} className={`px-4 py-2 font-bold text-gray-800 border-b-2 ${group.color.split(' ')[0]} ${group.color.split(' ')[1]}`}>{group.name}</td></tr>
-                                                    {studentsInGroup.map(student => (<tr key={student.id} className={`border-b hover:bg-gray-50 border-l-4 ${group.color.split(' ')[1]}`}><td className="px-4 py-2 font-medium text-gray-800">{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</td><td className="px-4 py-2"><select value={editedService.studentRoles.find(sr => sr.studentId === student.id)?.roleId || ''} onChange={e => handleStudentRoleChange(student.id, e.target.value || null)} disabled={isLocked} className="w-full p-1.5 border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 disabled:bg-gray-100"><option value="">Sin asignar</option>{serviceRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></td></tr>))}
-                                                </React.Fragment>
-                                            ))}
+                                            {groupedStudentsInService.map(({ group, students: studentsInGroup }) => {
+                                                const colorClasses = (group.color || 'bg-blue-100 border-blue-300').split(' ');
+                                                const bgClass = colorClasses[0] || 'bg-blue-100';
+                                                const borderClass = colorClasses[1] || 'border-blue-300';
+                                                return (
+                                                    <React.Fragment key={group.id}>
+                                                        <tr><td colSpan={2} className={`px-4 py-2 font-bold text-gray-800 border-b-2 ${bgClass} ${borderClass}`}>{group.name}</td></tr>
+                                                        {studentsInGroup.map(student => (<tr key={student.id} className={`border-b hover:bg-gray-50 border-l-4 ${borderClass}`}><td className="px-4 py-2 font-medium text-gray-800">{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</td><td className="px-4 py-2"><select value={editedService.studentRoles.find(sr => sr.studentId === student.id)?.roleId || ''} onChange={e => handleStudentRoleChange(student.id, e.target.value || null)} disabled={isLocked} className="w-full p-1.5 border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 disabled:bg-gray-100"><option value="">Sin asignar</option>{serviceRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></td></tr>))}
+                                                    </React.Fragment>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>

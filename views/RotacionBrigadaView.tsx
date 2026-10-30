@@ -57,35 +57,35 @@ export const RotacionBrigadaView: React.FC = () => {
         }
 
         if (serviceForReparto.type === 'agrupacion') {
-            const studentIds = (serviceForReparto.agrupaciones || []).flatMap(a => a.studentIds);
-            const found = students.filter(s => studentIds.includes(s.id));
-            return found.length > 0 ? found : students;
+            const studentIds = (serviceForReparto.agrupaciones || []).flatMap(a => a.studentIds || []);
+            const found = (students || []).filter(s => studentIds.includes(s.id));
+            return found.length > 0 ? found : (students || []);
         } else {
             const assignedGroupIds = [
                 ...(serviceForReparto.assignedGroups?.comedor || []),
                 ...(serviceForReparto.assignedGroups?.takeaway || [])
             ];
-            const assignedGroups = practiceGroups.filter(g => assignedGroupIds.includes(g.id));
-            const studentIds = assignedGroups.flatMap(g => g.studentIds);
-            const found = students.filter(s => studentIds.includes(s.id));
-            return found.length > 0 ? found : students;
+            const assignedGroups = (practiceGroups || []).filter(g => assignedGroupIds.includes(g.id));
+            const studentIds = assignedGroups.flatMap(g => g.studentIds || []);
+            const found = (students || []).filter(s => studentIds.includes(s.id));
+            return found.length > 0 ? found : (students || []);
         }
     }, [serviceForReparto, repartoTargetMode, students, practiceGroups]);
 
     // Historical counts for candidates across other services (excluding current one)
     const candidatesHistoricalStats = useMemo(() => {
         const statsMap: Record<string, { leaderCount: number; roleCounts: Record<string, number> }> = {};
-        students.forEach(st => {
+        (students || []).forEach(st => {
             const rCounts: Record<string, number> = {};
-            serviceRoles.forEach(r => { rCounts[r.id] = 0; });
+            (serviceRoles || []).forEach(r => { rCounts[r.id] = 0; });
             statsMap[st.id] = { leaderCount: 0, roleCounts: rCounts };
         });
 
-        services.forEach(srv => {
+        (services || []).forEach(srv => {
             if (srv.id === selectedServiceIdForReparto) return;
             (srv.studentRoles || []).forEach(sr => {
                 if (statsMap[sr.studentId]) {
-                    const role = serviceRoles.find(r => r.id === sr.roleId);
+                    const role = (serviceRoles || []).find(r => r.id === sr.roleId);
                     if (role) {
                         statsMap[sr.studentId].roleCounts[sr.roleId] = (statsMap[sr.studentId].roleCounts[sr.roleId] || 0) + 1;
                         if (role.type === 'leader') {
@@ -101,7 +101,7 @@ export const RotacionBrigadaView: React.FC = () => {
     // Role assignment counts in provisional state
     const provisionalRoleCounts = useMemo(() => {
         const counts: Record<string, number> = {};
-        serviceRoles.forEach(r => { counts[r.id] = 0; });
+        (serviceRoles || []).forEach(r => { counts[r.id] = 0; });
         (Object.values(provisionalRoles) as string[]).forEach(roleId => {
             if (counts[roleId] !== undefined) {
                 counts[roleId]++;
@@ -113,12 +113,12 @@ export const RotacionBrigadaView: React.FC = () => {
     // Filtered students for display in modal
     const filteredRepartoStudents = useMemo(() => {
         return eligibleStudentsForReparto.filter(st => {
-            const group = practiceGroups.find(g => g.studentIds.includes(st.id));
+            const group = (practiceGroups || []).find(g => (g.studentIds || []).includes(st.id));
             const matchesGroup = repartoGroupFilter === 'all' || group?.id === repartoGroupFilter;
-            const fullName = `${st.apellido1} ${st.apellido2} ${st.nombre}`.toLowerCase();
+            const fullName = `${st.apellido1 || ''} ${st.apellido2 || ''} ${st.nombre || ''}`.toLowerCase();
             const matchesSearch = fullName.includes(repartoSearchTerm.toLowerCase());
             return matchesGroup && matchesSearch;
-        }).sort((a, b) => a.apellido1.localeCompare(b.apellido1));
+        }).sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '') || (a.nombre || '').localeCompare(b.nombre || ''));
     }, [eligibleStudentsForReparto, practiceGroups, repartoGroupFilter, repartoSearchTerm]);
 
     // Reparto Handlers
@@ -276,8 +276,8 @@ export const RotacionBrigadaView: React.FC = () => {
         const matrix: Record<string, RotationRow> = {};
 
         // Initialize for all students
-        students.forEach(st => {
-            const grp = practiceGroups.find(g => g.studentIds.includes(st.id)) || null;
+        (students || []).forEach(st => {
+            const grp = (practiceGroups || []).find(g => (g.studentIds || []).includes(st.id)) || null;
             const initCounts: Record<string, number> = {};
             serviceRoles.forEach(r => { initCounts[r.id] = 0; });
 
@@ -328,13 +328,13 @@ export const RotacionBrigadaView: React.FC = () => {
     const filteredRows = useMemo(() => {
         return (Object.values(rotationMatrix) as RotationRow[])
             .filter((row: RotationRow) => {
-                const matchesSearch = `${row.student.nombre} ${row.student.apellido1} ${row.student.apellido2}`
+                const matchesSearch = `${row.student.nombre || ''} ${row.student.apellido1 || ''} ${row.student.apellido2 || ''}`
                     .toLowerCase()
                     .includes(searchTerm.toLowerCase());
                 const matchesGroup = selectedGroupId === 'all' || row.group?.id === selectedGroupId;
                 return matchesSearch && matchesGroup;
             })
-            .sort((a: RotationRow, b: RotationRow) => a.student.apellido1.localeCompare(b.student.apellido1));
+            .sort((a: RotationRow, b: RotationRow) => (a.student.apellido1 || '').localeCompare(b.student.apellido1 || '') || (a.student.nombre || '').localeCompare(b.student.nombre || ''));
     }, [rotationMatrix, searchTerm, selectedGroupId]);
 
     // KPI Summary

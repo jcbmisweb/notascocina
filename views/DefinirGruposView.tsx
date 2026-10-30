@@ -16,48 +16,58 @@ const groupColors = [
 ];
 
 const DefinirGruposView: React.FC = () => {
-    const { students, practiceGroups, setPracticeGroups, teacherData, instituteData, addToast } = useAppContext();
+    const { students = [], practiceGroups = [], setPracticeGroups, teacherData, instituteData, addToast } = useAppContext();
     const [searchTerm, setSearchTerm] = useState('');
+
+    const safeStudents = useMemo(() => Array.isArray(students) ? students : [], [students]);
+    const safePracticeGroups = useMemo(() => Array.isArray(practiceGroups) ? practiceGroups : [], [practiceGroups]);
 
     const studentAssignments = useMemo(() => {
         const assignments: Record<string, string | null> = {};
-        students.forEach(s => assignments[s.id] = null);
-        practiceGroups.forEach(g => {
-            g.studentIds.forEach(studentId => {
+        safeStudents.forEach(s => {
+            if (s?.id) assignments[s.id] = null;
+        });
+        safePracticeGroups.forEach(g => {
+            (g?.studentIds || []).forEach(studentId => {
                 assignments[studentId] = g.id;
             });
         });
         return assignments;
-    }, [practiceGroups, students]);
+    }, [safePracticeGroups, safeStudents]);
 
     const handleAddGroup = () => {
-        const nextGroupId = (practiceGroups.length > 0 ? Math.max(...practiceGroups.map(g => parseInt(g.id, 10))) : 0) + 1;
+        const numericIds = safePracticeGroups
+            .map(g => parseInt(g.id, 10))
+            .filter(n => !isNaN(n));
+        const nextGroupId = (numericIds.length > 0 ? Math.max(...numericIds) : 0) + 1;
         const newGroup: PracticeGroup = {
             id: String(nextGroupId),
             name: `Grupo ${nextGroupId}`,
-            color: groupColors[(nextGroupId - 1) % groupColors.length],
+            color: groupColors[(nextGroupId - 1) % groupColors.length] || groupColors[0],
             studentIds: [],
         };
-        setPracticeGroups(prev => [...prev, newGroup]);
+        setPracticeGroups(prev => [...(prev || []), newGroup]);
         addToast(`Grupo ${nextGroupId} añadido.`, 'success');
     };
 
     const handleDeleteGroup = (groupId: string) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar este grupo? Los alumnos asignados quedarán sin grupo.')) {
-            setPracticeGroups(prev => prev.filter(g => g.id !== groupId));
+            setPracticeGroups(prev => (prev || []).filter(g => g.id !== groupId));
             addToast('Grupo eliminado.', 'info');
         }
     };
 
     const handleAssignStudent = (studentId: string, groupId: string | null) => {
         setPracticeGroups(prev => {
-            const newGroups = prev.map(g => ({
+            const current = prev || [];
+            const newGroups = current.map(g => ({
                 ...g,
-                studentIds: g.studentIds.filter(id => id !== studentId)
+                studentIds: (g.studentIds || []).filter(id => id !== studentId)
             }));
             if (groupId) {
                 const targetGroup = newGroups.find(g => g.id === groupId);
                 if (targetGroup) {
+                    if (!targetGroup.studentIds) targetGroup.studentIds = [];
                     targetGroup.studentIds.push(studentId);
                 }
             }
@@ -66,17 +76,19 @@ const DefinirGruposView: React.FC = () => {
     };
     
     const filteredStudents = useMemo(() => {
-        return students.sort((a,b) => a.apellido1.localeCompare(b.apellido1)).filter(student => {
-            const fullName = `${student.nombre} ${student.apellido1} ${student.apellido2}`.toLowerCase();
-            return fullName.includes(searchTerm.toLowerCase());
-        });
-    }, [students, searchTerm]);
+        return [...safeStudents]
+            .sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '') || (a.nombre || '').localeCompare(b.nombre || ''))
+            .filter(student => {
+                const fullName = `${student.nombre || ''} ${student.apellido1 || ''} ${student.apellido2 || ''}`.toLowerCase();
+                return fullName.includes(searchTerm.toLowerCase());
+            });
+    }, [safeStudents, searchTerm]);
 
     const studentsWithoutGroup = useMemo(() => {
-        return students.filter(s => !studentAssignments[s.id]);
-    }, [students, studentAssignments]);
+        return safeStudents.filter(s => !studentAssignments[s.id]);
+    }, [safeStudents, studentAssignments]);
 
-    if (students.length === 0) {
+    if (safeStudents.length === 0) {
         return (
              <div className="text-center p-8 bg-white rounded-lg shadow">
                 <h2 className="text-2xl font-bold text-gray-700">No hay alumnos cargados</h2>
@@ -94,7 +106,7 @@ const DefinirGruposView: React.FC = () => {
                 </div>
                 <div className="flex space-x-3">
                     <button 
-                        onClick={() => generateGroupsPDF(practiceGroups, students, teacherData, instituteData)}
+                        onClick={() => generateGroupsPDF(safePracticeGroups, safeStudents, teacherData, instituteData)}
                         className="flex items-center bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition shadow-sm"
                     >
                         <PrinterIcon className="w-5 h-5 mr-1.5" />
@@ -127,10 +139,16 @@ const DefinirGruposView: React.FC = () => {
                             <li key={student.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
                                 <div className="flex items-center">
                                     <span className="text-sm font-medium text-gray-500 w-8">{index + 1}.</span>
-                                    <img src={student.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover mr-3" />
+                                    {student.fotoUrl ? (
+                                        <img src={student.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover mr-3 border" />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs mr-3 border border-blue-200">
+                                            {`${(student.nombre?.[0] || '').toUpperCase()}${(student.apellido1?.[0] || '').toUpperCase()}`}
+                                        </div>
+                                    )}
                                     <div>
-                                        <p className="font-semibold text-gray-800">{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</p>
-                                        <p className="text-xs text-gray-500">{student.grupo}</p>
+                                        <p className="font-semibold text-gray-800">{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</p>
+                                        <p className="text-xs text-gray-500">{student.grupo || 'Sin grupo académico'}</p>
                                     </div>
                                 </div>
                                 <select
@@ -139,7 +157,7 @@ const DefinirGruposView: React.FC = () => {
                                     className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-48 p-1.5"
                                 >
                                     <option value="">Sin grupo</option>
-                                    {practiceGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                    {safePracticeGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                                 </select>
                             </li>
                         ))}
@@ -154,18 +172,26 @@ const DefinirGruposView: React.FC = () => {
                             <p className="text-sm text-red-700">Asigna los alumnos restantes de la lista de la izquierda.</p>
                         </div>
                     )}
-                    {practiceGroups.map(group => {
-                        const members = students.filter(s => studentAssignments[s.id] === group.id);
+                    {safePracticeGroups.map(group => {
+                        const members = safeStudents.filter(s => studentAssignments[s.id] === group.id);
                         return (
-                            <div key={group.id} className={`p-4 rounded-lg shadow-sm border ${group.color}`}>
+                            <div key={group.id} className={`p-4 rounded-lg shadow-sm border ${group.color || 'bg-blue-100 border-blue-300'}`}>
                                 <div className="flex justify-between items-center mb-2">
                                     <h3 className="font-bold text-gray-800">{group.name} ({members.length} miembros)</h3>
-                                    <button onClick={() => handleDeleteGroup(group.id)} className="text-gray-500 hover:text-red-600">
+                                    <button onClick={() => handleDeleteGroup(group.id)} className="text-gray-500 hover:text-red-600" title="Eliminar grupo">
                                         <TrashIcon className="w-5 h-5" />
                                     </button>
                                 </div>
                                 <ul className="text-sm text-gray-700 list-disc list-inside">
-                                    {members.map(m => <li key={m.id}>{`${m.apellido1} ${m.apellido2}, ${m.nombre}`}</li>)}
+                                    {members.length > 0 ? (
+                                        members.map(m => (
+                                            <li key={m.id}>
+                                                {`${m.apellido1 || ''} ${m.apellido2 || ''}, ${m.nombre || ''}`.trim()}
+                                            </li>
+                                        ))
+                                    ) : (
+                                        <li className="list-none text-xs text-gray-400 italic">Sin alumnos asignados</li>
+                                    )}
                                 </ul>
                             </div>
                         );

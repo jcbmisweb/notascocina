@@ -301,16 +301,16 @@ const ServiceEvaluationView: React.FC<ServiceEvaluationViewProps> = ({ service, 
                 units.push({
                     id: agrupacion.id,
                     name: agrupacion.name,
-                    students: students.filter(s => agrupacion.studentIds.includes(s.id)).sort((a, b) => a.apellido1.localeCompare(b.apellido1)),
+                    students: (students || []).filter(s => (agrupacion.studentIds || []).includes(s.id)).sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '')),
                 });
             });
         } else {
             const groupIds = new Set([...(service.assignedGroups?.comedor || []), ...(service.assignedGroups?.takeaway || [])]);
-            practiceGroups.filter(pg => groupIds.has(pg.id)).forEach(group => {
+            (practiceGroups || []).filter(pg => groupIds.has(pg.id)).forEach(group => {
                 units.push({
                     id: group.id,
                     name: group.name,
-                    students: students.filter(s => group.studentIds.includes(s.id)).sort((a, b) => a.apellido1.localeCompare(b.apellido1)),
+                    students: (students || []).filter(s => (group.studentIds || []).includes(s.id)).sort((a, b) => (a.apellido1 || '').localeCompare(b.apellido1 || '')),
                 });
             });
         }

@@ -29,6 +29,7 @@ const AyudaFaqView = lazy(() => import('./views/AyudaFaqView'));
 const HelpDrawer = lazy(() => import('./components/HelpDrawer').then(m => ({ default: m.HelpDrawer })));
 import { LightbulbIcon } from './components/icons';
 import { OfflineStatusBanner } from './components/OfflineStatusBanner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 
 const AppContent: React.FC = () => {
@@ -150,9 +151,11 @@ const AppContent: React.FC = () => {
                     )}
                  </Suspense>
                 <main className={mainContentClass}>
-                    <Suspense fallback={<LoadingFallback />}>
-                        {renderView()}
-                    </Suspense>
+                    <ErrorBoundary fallbackTitle="Error al cargar la sección seleccionada">
+                        <Suspense fallback={<LoadingFallback />}>
+                            {renderView()}
+                        </Suspense>
+                    </ErrorBoundary>
                 </main>
             </div>
 
