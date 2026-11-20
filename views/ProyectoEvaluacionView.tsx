@@ -9,6 +9,7 @@ import { Student, ProyectoGroup, RetoGroupEntry, RetoStudentEntry } from '../typ
 import { DEFAULT_PROYECTO_CONFIG, ProyectoStructureConfig, RetoConfig } from '../data/constants';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 export const ProyectoEvaluacionView: React.FC = () => {
     const { 
@@ -640,13 +641,11 @@ const addImageToPdf = (doc: jsPDF, imageData: string | null | undefined, x: numb
                                             
                                             {/* Alumno + Equipo */}
                                             <td className="p-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-800 font-bold flex items-center justify-center text-[10px] flex-shrink-0">
-                                                        {st.nombre.charAt(0)}{st.apellido1.charAt(0)}
-                                                    </div>
+                                                <div className="flex items-center gap-2.5">
+                                                    <StudentAvatar student={st} size="sm" />
                                                     <div className="truncate">
                                                         <div className="flex items-center gap-1 truncate font-semibold text-gray-900 text-xs">
-                                                            <span>{st.apellido1} {st.apellido2}, {st.nombre}</span>
+                                                            <span>{formatStudentFullName(st)}</span>
                                                             {isCoordinator && (
                                                                 <span className="text-amber-500 font-bold text-xs" title="Coordinador/a del equipo">👑</span>
                                                             )}
@@ -861,7 +860,10 @@ const addImageToPdf = (doc: jsPDF, imageData: string | null | undefined, x: numb
                                                 return (
                                                     <tr key={st.id} className="hover:bg-purple-50/20">
                                                         <td className="p-3 font-semibold text-gray-900">
-                                                            {st.apellido1} {st.apellido2}, {st.nombre}
+                                                            <div className="flex items-center gap-2">
+                                                                <StudentAvatar student={st} size="xs" />
+                                                                <span>{formatStudentFullName(st)}</span>
+                                                            </div>
                                                         </td>
                                                         <td className="p-3 text-gray-500">{grp?.name || 'Sin equipo'}</td>
                                                         <td className="p-3 text-center">
@@ -982,7 +984,10 @@ const addImageToPdf = (doc: jsPDF, imageData: string | null | undefined, x: numb
                                                 return (
                                                     <tr key={st.id} className="hover:bg-purple-50/20">
                                                         <td className="p-3 font-semibold text-gray-900">
-                                                            {st.apellido1} {st.apellido2}, {st.nombre}
+                                                            <div className="flex items-center gap-2">
+                                                                <StudentAvatar student={st} size="xs" />
+                                                                <span>{formatStudentFullName(st)}</span>
+                                                            </div>
                                                         </td>
                                                         <td className="p-3 text-gray-500">{grp?.name || 'Sin equipo'}</td>
                                                         

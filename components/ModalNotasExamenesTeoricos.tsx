@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { XIcon, SaveIcon, ClipboardCheckIcon, PencilIcon, CheckIcon } from './icons';
 import { Student, InstrumentoEvaluacion, ActivityGrade } from '../types';
+import { StudentAvatar, formatStudentFullName } from './StudentAvatar';
 
 interface ModalNotasExamenesTeoricosProps {
     isOpen: boolean;
@@ -248,7 +249,7 @@ export const ModalNotasExamenesTeoricos: React.FC<ModalNotasExamenesTeoricosProp
                     if (!nextAcad[st.id][period].manualGrades) nextAcad[st.id][period].manualGrades = {};
                     
                     const local = localGrades[st.id];
-                    if (local && local.normal !== null) {
+                    if (local) {
                         nextAcad[st.id][period].manualGrades[instrumentKey] = local.normal;
                     }
                 });
@@ -412,13 +413,11 @@ export const ModalNotasExamenesTeoricos: React.FC<ModalNotasExamenesTeoricosProp
                                             {idx + 1}
                                         </td>
                                         <td className="p-2 border-r border-gray-200">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-[10px] flex-shrink-0">
-                                                    {st.nombre.charAt(0)}{st.apellido1.charAt(0)}
-                                                </div>
+                                            <div className="flex items-center gap-2.5">
+                                                <StudentAvatar student={st} size="sm" />
                                                 <div>
                                                     <span className="font-semibold text-gray-900 block">
-                                                        {st.apellido1} {st.apellido2}, {st.nombre}
+                                                        {formatStudentFullName(st)}
                                                     </span>
                                                     {st.grupo && (
                                                         <span className="text-[10px] text-gray-500 font-normal">

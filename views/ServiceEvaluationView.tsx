@@ -5,6 +5,7 @@ import { PRE_SERVICE_BEHAVIOR_ITEMS, BEHAVIOR_RATING_MAP, GROUP_EVALUATION_ITEMS
 import { PlusIcon, TrashIcon, ChefHatIcon, FileTextIcon } from '../components/icons';
 import { downloadServiceEvaluationPdf } from '../components/servicePdfUtils';
 import { useAppContext } from '../context/AppContext';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 interface ServiceEvaluationViewProps {
     service: Service;
@@ -46,9 +47,12 @@ const PreServiceIndividualTable: React.FC<{
                             const roleId = service.studentRoles.find(sr => sr.studentId === s.id)?.roleId;
                             const roleName = serviceRoles.find(r => r.id === roleId)?.name;
                             return (
-                            <th key={s.id} className="p-2 border font-semibold text-gray-600 truncate">
-                                {roleName && <div className="text-[10px] font-normal text-blue-600 uppercase tracking-wider mb-0.5">{roleName}</div>}
-                                {s.apellido1} {s.nombre.charAt(0)}.
+                            <th key={s.id} className="p-2 border font-semibold text-gray-700 min-w-[140px] align-top">
+                                <div className="flex flex-col items-center gap-1.5 text-center">
+                                    <StudentAvatar student={s} size="md" />
+                                    {roleName && <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded uppercase tracking-wider">{roleName}</span>}
+                                    <span className="text-[11px] font-bold text-gray-800 leading-tight whitespace-normal">{formatStudentFullName(s)}</span>
+                                </div>
                             </th>
                         )})}
                     </tr>
@@ -165,9 +169,12 @@ const ServiceDayIndividualEvaluationTable: React.FC<{
                             const roleId = (service.studentRoles || []).find(sr => sr.studentId === s.id)?.roleId;
                             const roleName = (serviceRoles || []).find(r => r.id === roleId)?.name;
                             return (
-                            <th key={s.id} className="p-2 border font-semibold text-gray-600 truncate">
-                                {roleName && <div className="text-[10px] font-normal text-blue-600 uppercase tracking-wider mb-0.5">{roleName}</div>}
-                                {s.apellido1 || ''} {(s.nombre || '').charAt(0)}.
+                            <th key={s.id} className="p-2 border font-semibold text-gray-700 min-w-[140px] align-top">
+                                <div className="flex flex-col items-center gap-1.5 text-center">
+                                    <StudentAvatar student={s} size="md" />
+                                    {roleName && <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded uppercase tracking-wider">{roleName}</span>}
+                                    <span className="text-[11px] font-bold text-gray-800 leading-tight whitespace-normal">{formatStudentFullName(s)}</span>
+                                </div>
                             </th>
                         )})}
                     </tr>

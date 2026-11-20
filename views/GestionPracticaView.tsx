@@ -5,6 +5,7 @@ import { downloadServicePlanningPdf, downloadServiceEvaluationPdf } from '../com
 import { ServiceCountdownTimer } from '../components/ServiceCountdownTimer';
 import { RotacionBrigadaView } from './RotacionBrigadaView';
 import { useAppContext } from '../context/AppContext';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 const ServiceEvaluationView = lazy(() => import('./ServiceEvaluationView'));
 
@@ -50,8 +51,8 @@ const AsignarAlumnosModal: React.FC<{
                         return (
                             <label key={student.id} className={`flex items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer ${isAssignedElsewhere ? 'opacity-70' : ''}`}>
                                 <input type="checkbox" checked={selectedIds.has(student.id)} onChange={() => handleToggle(student.id)} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <img src={student.fotoUrl} alt="" className="w-8 h-8 rounded-full object-cover mx-3" />
-                                <span className="text-sm flex-1">{student.apellido1} {student.apellido2}, {student.nombre}</span>
+                                <StudentAvatar student={student} size="sm" className="mx-3" />
+                                <span className="text-sm flex-1">{formatStudentFullName(student)}</span>
                                 {isAssignedElsewhere && (
                                     <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">Asignado</span>
                                 )}
@@ -171,9 +172,9 @@ const PlanificacionAgrupaciones: React.FC<{
                             <div className="flex flex-wrap gap-2">
                                 {assignedStudents.length > 0 
                                     ? assignedStudents.map(s => (
-                                        <div key={s.id} className="flex items-center bg-gray-100 rounded-full px-2 py-1 text-sm" title={`${s.nombre} ${s.apellido1}`}>
-                                            <img src={s.fotoUrl} alt="" className="w-6 h-6 rounded-full object-cover mr-2" />
-                                            <span>{s.apellido1} {s.nombre.charAt(0)}.</span>
+                                        <div key={s.id} className="flex items-center bg-gray-100 rounded-full px-2.5 py-1 text-xs font-medium text-gray-800 border border-gray-200" title={formatStudentFullName(s)}>
+                                            <StudentAvatar student={s} size="xs" className="mr-2" />
+                                            <span>{formatStudentFullName(s)}</span>
                                         </div>
                                       ))
                                     : <p className="text-sm text-gray-500 italic">No hay alumnos asignados a esta elaboración.</p>
@@ -609,11 +610,18 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                             const assignment = (editedService.studentRoles || []).find(sr => sr.roleId === role.id);
                             const student = assignment ? (students || []).find(s => s.id === assignment.studentId) : null;
                             return (
-                                <div key={role.id} className="flex flex-col">
-                                    <span className="text-sm font-semibold text-gray-500">{role.name}</span>
-                                    <span className="text-md font-medium text-gray-800 truncate" title={student ? `${student.nombre || ''} ${student.apellido1 || ''}`.trim() : 'Sin asignar'}>
-                                        {student ? `${student.nombre || ''} ${student.apellido1 || ''} ${student.apellido2 || ''}`.trim() : <span className="italic text-gray-400">Sin asignar</span>}
-                                    </span>
+                                <div key={role.id} className="flex flex-col gap-1">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{role.name}</span>
+                                    {student ? (
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <StudentAvatar student={student} size="sm" />
+                                            <span className="text-sm font-medium text-gray-800 truncate" title={formatStudentFullName(student)}>
+                                                {formatStudentFullName(student)}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm italic text-gray-400">Sin asignar</span>
+                                    )}
                                 </div>
                             );
                         })}
@@ -676,7 +684,12 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                                                             <tbody>
                                                                 {studentsInAgrupacion.map(student => (
                                                                     <tr key={student.id} className="border-t hover:bg-gray-50">
-                                                                        <td className="px-4 py-2 font-medium text-gray-800">{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</td>
+                                                                        <td className="px-4 py-2 font-medium text-gray-800">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <StudentAvatar student={student} size="xs" />
+                                                                                <span>{formatStudentFullName(student)}</span>
+                                                                            </div>
+                                                                        </td>
                                                                         <td className="px-4 py-2">
                                                                             <select
                                                                                 value={(editedService.studentRoles || []).find(sr => sr.studentId === student.id)?.roleId || ''}
@@ -744,7 +757,7 @@ const GestionPracticaView: React.FC<GestionPracticaViewProps> = ({
                                                 return (
                                                     <React.Fragment key={group.id}>
                                                         <tr><td colSpan={2} className={`px-4 py-2 font-bold text-gray-800 border-b-2 ${bgClass} ${borderClass}`}>{group.name}</td></tr>
-                                                        {studentsInGroup.map(student => (<tr key={student.id} className={`border-b hover:bg-gray-50 border-l-4 ${borderClass}`}><td className="px-4 py-2 font-medium text-gray-800">{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</td><td className="px-4 py-2"><select value={editedService.studentRoles.find(sr => sr.studentId === student.id)?.roleId || ''} onChange={e => handleStudentRoleChange(student.id, e.target.value || null)} disabled={isLocked} className="w-full p-1.5 border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 disabled:bg-gray-100"><option value="">Sin asignar</option>{serviceRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></td></tr>))}
+                                                        {studentsInGroup.map(student => (<tr key={student.id} className={`border-b hover:bg-gray-50 border-l-4 ${borderClass}`}><td className="px-4 py-2 font-medium text-gray-800"><div className="flex items-center gap-2"><StudentAvatar student={student} size="xs" /><span>{formatStudentFullName(student)}</span></div></td><td className="px-4 py-2"><select value={editedService.studentRoles.find(sr => sr.studentId === student.id)?.roleId || ''} onChange={e => handleStudentRoleChange(student.id, e.target.value || null)} disabled={isLocked} className="w-full p-1.5 border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 disabled:bg-gray-100"><option value="">Sin asignar</option>{serviceRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></td></tr>))}
                                                     </React.Fragment>
                                                 );
                                             })}

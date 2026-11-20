@@ -17,12 +17,14 @@ import { useAppContext } from '../context/AppContext';
 import { ExportButtons } from '../components/ExportButtons';
 import * as XLSX from 'xlsx';
 import { generateStudentFilePDF } from '../services/reportGenerator';
-import { calculateRAGrade, calculateCriterioGrade } from '../services/academicAnalytics';
+import { calculateRAGrade, calculateCriterioGrade, calculateProyectoStudentAnalytics, getNumericValue, AnalyticsExtraContext } from '../services/academicAnalytics';
 import { calculateStudentPeriodAverages, calculateModularGrades, calculateStudentPcGradeComplete } from '../services/gradeCalculator';
 import { ACADEMIC_EVALUATION_STRUCTURE, COURSE_MODULES, SERVICE_GRADE_WEIGHTS, PRACTICAL_EXAM_RUBRIC } from '../data/constants';
+import { getStudentInitials } from '../components/StudentAvatar';
 
 interface FichaAlumnoProps {
   student: Student;
+  initialTab?: string;
   onBack: () => void;
   onUpdatePhoto: (studentId: string, photoUrl: string) => void;
   onUpdateStudent: (student: Student) => void;
@@ -118,7 +120,7 @@ const CombinedPerformanceChart: React.FC<{
 };
 
 
-const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhoto, onUpdateStudent }) => {
+const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, initialTab = 'general', onBack, onUpdatePhoto, onUpdateStudent }) => {
   const { 
     students,
     setStudents,
@@ -127,6 +129,9 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
     pcResultadosAprendizaje, pcCriteriosEvaluacion, pcInstrumentosEvaluacion,
     optativaResultadosAprendizaje, optativaCriteriosEvaluacion, optativaInstrumentosEvaluacion,
     proyectoResultadosAprendizaje, proyectoCriteriosEvaluacion, proyectoInstrumentosEvaluacion,
+    proyectoGroups,
+    proyectoEvaluations,
+    isStudentConvalidated,
     academicGrades: allAcademicGrades,
     instrumentGrades,
     calculatedStudentGrades: allCalculatedGrades,
@@ -147,10 +152,27 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedStudent, setEditedStudent] = useState<Student>(student);
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [expandedRAs, setExpandedRAs] = useState<Set<string>>(new Set());
   const [expandedAcademicRows, setExpandedAcademicRows] = useState<Set<string>>(new Set());
-  const [activeModuleForRA, setActiveModuleForRA] = useState<'pc' | 'optativa' | 'proyecto'>('pc');
+  const [moduleFilterForRA, setModuleFilterForRA] = useState<'all' | 'pc' | 'optativa' | 'proyecto'>('all');
+  const [avatarImgError, setAvatarImgError] = useState(false);
+
+  const analyticsExtra = useMemo<AnalyticsExtraContext>(() => ({
+    proyectoGroups,
+    proyectoEvaluations,
+    courseGrades: allCourseGrades,
+    pcInstrumentos: pcInstrumentosEvaluacion,
+    optativaInstrumentos: optativaInstrumentosEvaluacion,
+    proyectoInstrumentos: proyectoInstrumentosEvaluacion,
+  }), [
+    proyectoGroups,
+    proyectoEvaluations,
+    allCourseGrades,
+    pcInstrumentosEvaluacion,
+    optativaInstrumentosEvaluacion,
+    proyectoInstrumentosEvaluacion,
+  ]);
 
   const getGradeNormal = useCallback((studentId: string, activityId: string) => {
       const g = instrumentGrades[studentId]?.[activityId];
@@ -244,7 +266,9 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
   const fullName = `${student.apellido1} ${student.apellido2}, ${student.nombre}`.trim();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setEditedStudent(student) }, [student]);
+  useEffect(() => { setEditedStudent(student); }, [student]);
+  useEffect(() => { setActiveTab(initialTab); }, [student.id, initialTab]);
+  useEffect(() => { setAvatarImgError(false); }, [student.fotoUrl]);
 
   const handleDeleteThisStudent = () => {
       if (window.confirm(`¿Estás seguro de que deseas eliminar al alumno "${fullName}"?`)) {
@@ -642,18 +666,39 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
             .sort((a,b) => new Date(a.service.date).getTime() - new Date(b.service.date).getTime());
     }, [student.id, students, services, serviceEvaluations, practiceGroups]);
 
-    const { currentRAs, currentCriterios } = useMemo(() => {
-        switch (activeModuleForRA) {
-            case 'pc':
-                return { currentRAs: pcResultadosAprendizaje, currentCriterios: pcCriteriosEvaluacion };
-            case 'optativa':
-                return { currentRAs: optativaResultadosAprendizaje, currentCriterios: optativaCriteriosEvaluacion };
-            case 'proyecto':
-                return { currentRAs: proyectoResultadosAprendizaje, currentCriterios: proyectoCriteriosEvaluacion };
-            default:
-                return { currentRAs: {}, currentCriterios: {} };
-        }
-    }, [activeModuleForRA, pcResultadosAprendizaje, pcCriteriosEvaluacion, optativaResultadosAprendizaje, optativaCriteriosEvaluacion, proyectoResultadosAprendizaje, proyectoCriteriosEvaluacion]);
+  const raModulesList = useMemo(() => ([
+      {
+          key: 'pc' as const,
+          label: 'Productos Culinarios (PC)',
+          ras: Object.values((pcResultadosAprendizaje || {}) as Record<string, ResultadoAprendizaje>),
+          criterios: (pcCriteriosEvaluacion || {}) as Record<string, CriterioEvaluacion>,
+          badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+          accentClass: 'bg-blue-600',
+          borderClass: 'border-blue-200',
+      },
+      {
+          key: 'optativa' as const,
+          label: 'Optativa (Cocina Sostenible)',
+          ras: Object.values((optativaResultadosAprendizaje || {}) as Record<string, ResultadoAprendizaje>),
+          criterios: (optativaCriteriosEvaluacion || {}) as Record<string, CriterioEvaluacion>,
+          badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+          accentClass: 'bg-emerald-600',
+          borderClass: 'border-emerald-200',
+      },
+      {
+          key: 'proyecto' as const,
+          label: 'Proyecto Intermodular',
+          ras: Object.values((proyectoResultadosAprendizaje || {}) as Record<string, ResultadoAprendizaje>),
+          criterios: (proyectoCriteriosEvaluacion || {}) as Record<string, CriterioEvaluacion>,
+          badgeClass: 'bg-purple-100 text-purple-800 border-purple-200',
+          accentClass: 'bg-purple-600',
+          borderClass: 'border-purple-200',
+      },
+  ]), [
+      pcResultadosAprendizaje, pcCriteriosEvaluacion,
+      optativaResultadosAprendizaje, optativaCriteriosEvaluacion,
+      proyectoResultadosAprendizaje, proyectoCriteriosEvaluacion,
+  ]);
 
   const TimelineIcon: React.FC<{type: TimelineEvent['type']}> = ({ type }) => {
     const baseClass = "w-8 h-8 rounded-full flex items-center justify-center text-white";
@@ -662,18 +707,31 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
     return null;
   };
   
+  const hasValidAvatar = Boolean(student.fotoUrl && student.fotoUrl.trim() !== '' && !avatarImgError);
+
   return (
     <div>
       <header className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div className="flex items-center">
             <div 
-                className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full" 
+                className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full mr-4" 
                 onClick={handlePhotoClick} 
                 onPaste={handlePaste}
                 tabIndex={0}
                 title="Haz clic para subir o haz Ctrl+V para pegar una captura de pantalla de la foto"
             >
-                <img className="h-20 w-20 rounded-full object-cover mr-4 border-2 border-gray-200 group-hover:border-blue-500 transition-colors" src={student.fotoUrl} alt={`Foto de ${fullName}`} />
+                {hasValidAvatar ? (
+                    <img
+                        className="h-20 w-20 rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-500 transition-colors"
+                        src={student.fotoUrl}
+                        alt={`Foto de ${fullName}`}
+                        onError={() => setAvatarImgError(true)}
+                    />
+                ) : (
+                    <div className="h-20 w-20 rounded-full bg-indigo-100 text-indigo-800 font-extrabold text-2xl flex items-center justify-center border-2 border-indigo-200 group-hover:border-blue-500 transition-colors select-none">
+                        {getStudentInitials(student)}
+                    </div>
+                )}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex flex-col items-center justify-center transition-opacity duration-300">
                     <CameraIcon className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     <span className="text-[9px] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">Pegar / Subir</span>
@@ -1262,10 +1320,27 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
                                         let calculated = false;
 
                                         if (mod.name === 'Optativa') {
-                                            gradesObj = calculateModularGrades(student.id, instrumentGrades, optativaInstrumentosEvaluacion);
+                                            const modCalc = calculateModularGrades(student.id, instrumentGrades, optativaInstrumentosEvaluacion, allCalculatedGrades[student.id]);
+                                            const storedOpt = allCourseGrades[student.id]?.['Optativa'] || allCourseGrades[student.id]?.['optativa'] || allCourseGrades[student.id]?.['Optativo'] || {};
+                                            const t1 = modCalc.t1 ?? getNumericValue(storedOpt.t1);
+                                            const t2 = modCalc.t2 ?? getNumericValue(storedOpt.t2);
+                                            const valid = [t1, t2].filter((g): g is number => g !== null && !isNaN(g));
+                                            gradesObj = {
+                                                t1,
+                                                t2,
+                                                t3: null,
+                                                final: modCalc.final ?? (valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : getNumericValue((storedOpt as any).final))
+                                            };
                                             calculated = true;
                                         } else if (mod.name === 'Proyecto') {
-                                            gradesObj = calculateModularGrades(student.id, instrumentGrades, proyectoInstrumentosEvaluacion);
+                                            const proyAnalytics = calculateProyectoStudentAnalytics(student.id, proyectoGroups, proyectoEvaluations, allCourseGrades);
+                                            const storedProy = allCourseGrades[student.id]?.['Proyecto'] || allCourseGrades[student.id]?.['proyecto'] || {};
+                                            gradesObj = {
+                                                t1: getNumericValue(storedProy.t1),
+                                                t2: getNumericValue(storedProy.t2),
+                                                t3: proyAnalytics.finalGrade ?? getNumericValue(storedProy.t3),
+                                                final: proyAnalytics.finalGrade ?? getNumericValue((storedProy as any).final)
+                                            };
                                             calculated = true;
                                         } else {
                                             const stored = allCourseGrades[student.id]?.[mod.name] || {};
@@ -1305,29 +1380,201 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
         )}
 
         {activeTab === 'ra' && (
-             <div className="space-y-4">
-                <div className="p-4 bg-white rounded-lg shadow-sm">
-                    <label htmlFor="ra-module-selector" className="font-semibold mr-4">Módulo:</label>
-                    <select id="ra-module-selector" value={activeModuleForRA} onChange={e => setActiveModuleForRA(e.target.value as any)} className="p-2 border rounded-md bg-white shadow-sm">
-                        <option value="pc">Productos Culinarios (PC)</option>
-                        <option value="optativa">Optativa</option>
-                        <option value="proyecto">Proyecto</option>
-                    </select>
+             <div className="space-y-6">
+                <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 className="text-base font-bold text-gray-800">Resultados de Aprendizaje por Módulo</h3>
+                        <p className="text-xs text-gray-500">Progreso detallado y ponderación en los tres módulos profesionales</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {[
+                            { key: 'all' as const, label: 'Todos los Módulos (3)' },
+                            { key: 'pc' as const, label: 'Productos Culinarios' },
+                            { key: 'optativa' as const, label: 'Optativa' },
+                            { key: 'proyecto' as const, label: 'Proyecto Intermodular' },
+                        ].map(pill => (
+                            <button
+                                key={pill.key}
+                                type="button"
+                                onClick={() => setModuleFilterForRA(pill.key)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
+                                    moduleFilterForRA === pill.key
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                                }`}
+                            >
+                                {pill.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                {Object.values(currentRAs as Record<string, ResultadoAprendizaje>).map((ra) => {
-                    const isExpanded = expandedRAs.has(ra.id);
-                    const { grade, ponderacionTotal } = calculateRAGrade(ra, student.id, activeModuleForRA, currentCriterios as Record<string, CriterioEvaluacion>, allAcademicGrades, instrumentGrades, allCalculatedGrades);
-                    return (
-                        <div key={ra.id} className="bg-white shadow-sm rounded-lg overflow-hidden">
-                            <div className="flex items-center p-4 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedRAs(p => p.has(ra.id) ? (p.delete(ra.id), new Set(p)) : new Set(p.add(ra.id)))}>
-                                {isExpanded ? <ChevronDownIcon className="w-5 h-5 mr-2"/> : <ChevronRightIcon className="w-5 h-5 mr-2"/>}
-                                <div className="flex-1 ml-2"><h4 className="font-bold text-gray-800">{ra.nombre}</h4><p className="text-xs text-gray-500">Ponderación evaluada: {ponderacionTotal}%</p></div>
-                                <div className="text-right"><p className="text-sm font-medium text-gray-500">Nota RA</p><p className={`text-2xl font-bold ${grade === null ? 'text-gray-400' : grade < 5 ? 'text-red-600' : 'text-green-600'}`}>{grade?.toFixed(2) ?? 'N/E'}</p></div>
+
+                {raModulesList
+                    .filter(mod => moduleFilterForRA === 'all' || moduleFilterForRA === mod.key)
+                    .map(mod => {
+                        const isConvalidated = isStudentConvalidated(student.id, mod.key);
+                        const raResults = mod.ras.map(ra => ({
+                            ra,
+                            ...calculateRAGrade(
+                                ra,
+                                student.id,
+                                mod.key,
+                                mod.criterios,
+                                allAcademicGrades,
+                                instrumentGrades,
+                                allCalculatedGrades,
+                                analyticsExtra
+                            ),
+                        }));
+                        const gradedRAs = raResults.filter(r => r.grade !== null) as { ra: ResultadoAprendizaje; grade: number; ponderacionTotal: number; maxPonderacion: number }[];
+                        const moduleRAAvg = gradedRAs.length > 0
+                            ? gradedRAs.reduce((sum, r) => sum + r.grade, 0) / gradedRAs.length
+                            : null;
+
+                        return (
+                            <div key={mod.key} className={`bg-white rounded-xl shadow-sm border ${mod.borderClass} overflow-hidden`}>
+                                <div className="px-5 py-4 bg-gray-50/80 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className={`w-2.5 h-6 rounded-sm ${mod.accentClass}`}></span>
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 text-base">{mod.label}</h4>
+                                            <p className="text-xs text-gray-500">
+                                                RAs evaluados: <span className="font-semibold text-gray-700">{gradedRAs.length} / {mod.ras.length}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {isConvalidated ? (
+                                            <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                CONVALIDADO
+                                            </span>
+                                        ) : (
+                                            <div className={`px-3 py-1 rounded-lg border text-xs font-bold ${mod.badgeClass}`}>
+                                                Media RAs: {moduleRAAvg !== null ? moduleRAAvg.toFixed(2) : 'N/E'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {isConvalidated ? (
+                                    <div className="p-6 text-center bg-emerald-50/40 text-emerald-800 text-sm font-semibold">
+                                        Módulo convalidado para este alumno. No requiere evaluación de RAs.
+                                    </div>
+                                ) : mod.ras.length === 0 ? (
+                                    <div className="p-6 text-center text-gray-400 text-sm">
+                                        No hay Resultados de Aprendizaje configurados en este módulo.
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-gray-100">
+                                        {raResults.map(({ ra, grade, ponderacionTotal, maxPonderacion }) => {
+                                            const raKey = `${mod.key}:${ra.id}`;
+                                            const isExpanded = expandedRAs.has(raKey);
+                                            const pct = grade !== null ? Math.min(100, Math.max(0, (grade / 10) * 100)) : 0;
+                                            const barColor = grade === null
+                                                ? 'bg-gray-300'
+                                                : grade < 5
+                                                    ? 'bg-red-500'
+                                                    : grade < 7
+                                                        ? 'bg-yellow-400'
+                                                        : 'bg-green-500';
+
+                                            return (
+                                                <div key={raKey} className="bg-white">
+                                                    <div
+                                                        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                        onClick={() => setExpandedRAs(prev => {
+                                                            const next = new Set(prev);
+                                                            if (next.has(raKey)) next.delete(raKey);
+                                                            else next.add(raKey);
+                                                            return next;
+                                                        })}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-4 mb-2.5">
+                                                            <div className="flex items-start gap-2 min-w-0 flex-1">
+                                                                {isExpanded
+                                                                    ? <ChevronDownIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                                                                    : <ChevronRightIcon className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                                                                }
+                                                                <div className="min-w-0">
+                                                                    <h5 className="font-bold text-gray-800 text-sm leading-snug">{ra.nombre}</h5>
+                                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                                        Ponderación evaluada: <span className="font-semibold text-gray-700">{ponderacionTotal}%</span> / {maxPonderacion}%
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right flex-shrink-0">
+                                                                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 block">Nota RA</span>
+                                                                <span className={`text-xl font-extrabold ${grade === null ? 'text-gray-400' : grade < 5 ? 'text-red-600' : 'text-green-600'}`}>
+                                                                    {grade !== null ? grade.toFixed(2) : 'N/E'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="pl-7">
+                                                            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                                                <div
+                                                                    className={`h-2.5 rounded-full transition-all duration-500 ${barColor}`}
+                                                                    style={{ width: `${pct}%` }}
+                                                                ></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {isExpanded && (
+                                                        <div className="border-t border-gray-100 bg-gray-50 p-4 pl-10">
+                                                            <h6 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2.5">Desglose de Criterios</h6>
+                                                            <div className="space-y-2.5">
+                                                                {(ra.criteriosEvaluacion || []).map(cId => {
+                                                                    const c = mod.criterios[cId];
+                                                                    if (!c) return null;
+                                                                    const cGrade = calculateCriterioGrade(
+                                                                        c,
+                                                                        student.id,
+                                                                        mod.key,
+                                                                        allAcademicGrades,
+                                                                        instrumentGrades,
+                                                                        allCalculatedGrades,
+                                                                        analyticsExtra
+                                                                    );
+                                                                    const cPct = cGrade !== null ? Math.min(100, Math.max(0, (cGrade / 10) * 100)) : 0;
+                                                                    const cBarColor = cGrade === null
+                                                                        ? 'bg-gray-300'
+                                                                        : cGrade < 5
+                                                                            ? 'bg-red-500'
+                                                                            : cGrade < 7
+                                                                                ? 'bg-yellow-400'
+                                                                                : 'bg-green-500';
+                                                                    return (
+                                                                        <div key={c.id} className="p-3 bg-white rounded-lg border border-gray-200">
+                                                                            <div className="flex justify-between items-start gap-4 mb-1.5">
+                                                                                <p className="text-xs sm:text-sm text-gray-800 font-medium">{c.descripcion}</p>
+                                                                                <div className="text-right flex-shrink-0">
+                                                                                    <p className="text-[11px] text-gray-500">Pond: {c.ponderacion}%</p>
+                                                                                    <p className={`text-sm font-bold ${cGrade === null ? 'text-gray-400' : cGrade < 5 ? 'text-red-500' : 'text-green-600'}`}>
+                                                                                        {cGrade !== null ? cGrade.toFixed(2) : 'N/E'}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                                                                <div
+                                                                                    className={`h-1.5 rounded-full transition-all duration-300 ${cBarColor}`}
+                                                                                    style={{ width: `${cPct}%` }}
+                                                                                ></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
-                            {isExpanded && (<div className="border-t bg-gray-50 p-4"><h5 className="text-sm font-semibold text-gray-600 mb-2">Desglose de Criterios</h5><div className="space-y-2">{ra.criteriosEvaluacion.map(cId => {const c = currentCriterios[cId]; if(!c) return null; const cGrade = calculateCriterioGrade(c,student.id, activeModuleForRA, allAcademicGrades, instrumentGrades, allCalculatedGrades); return (<div key={c.id} className="flex justify-between p-2 bg-white rounded-md border"><div><p className="text-sm text-gray-800">{c.descripcion}</p></div><div className="text-right flex-shrink-0 ml-4"><p className="text-xs text-gray-500">Pond: {c.ponderacion}%</p><p className={`font-bold ${cGrade === null ? 'text-gray-400' : cGrade < 5 ? 'text-red-500' : 'text-gray-800'}`}>{cGrade?.toFixed(2) ?? 'N/E'}</p></div></div>);})}</div></div>)}
-                        </div>
-                    )
-                })}
+                        );
+                    })}
             </div>
         )}
 
@@ -1346,9 +1593,9 @@ const FichaAlumno: React.FC<FichaAlumnoProps> = ({ student, onBack, onUpdatePhot
                                             <td className="p-2 font-semibold">{data.service.name}</td>
                                             <td className="p-2 text-center">{new Date(data.service.date).toLocaleDateString('es-ES')}</td>
                                             <td className="p-2 text-center">{data.groupName}</td>
-                                            <td className="p-2 text-center font-medium">{data.individualGrade.toFixed(2)}</td>
-                                            <td className="p-2 text-center font-medium">{data.groupGrade.toFixed(2)}</td>
-                                            <td className={`p-2 text-center font-bold ${data.studentGrade < 5 ? 'text-red-600' : 'text-green-600'}`}>{data.studentGrade.toFixed(2)}</td>
+                                            <td className="p-2 text-center font-medium">{data.individualGrade !== null ? data.individualGrade.toFixed(2) : '-'}</td>
+                                            <td className="p-2 text-center font-medium">{data.groupGrade !== null ? data.groupGrade.toFixed(2) : '-'}</td>
+                                            <td className={`p-2 text-center font-bold ${data.studentGrade === null ? 'text-gray-400' : data.studentGrade < 5 ? 'text-red-600' : 'text-green-600'}`}>{data.studentGrade !== null ? data.studentGrade.toFixed(2) : '-'}</td>
                                             <td className="p-2 text-gray-600 max-w-xs truncate" title={data.observations}>{data.observations}</td>
                                         </tr>
                                     ))}

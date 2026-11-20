@@ -7,6 +7,7 @@ import {
     XIcon, SaveIcon, CheckIcon, AlertTriangleIcon, ClockIcon, 
     ChevronLeftIcon, ChevronRightIcon, PencilIcon, RotateCcwIcon, UsersIcon 
 } from '../icons';
+import { StudentAvatar, formatStudentFullName } from '../StudentAvatar';
 
 interface TabletModeViewProps {
     isOpen: boolean;
@@ -149,10 +150,8 @@ export const TabletModeView: React.FC<TabletModeViewProps> = ({
                                             : (contrastMode === 'dark' ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-200 text-slate-700 hover:bg-slate-300')
                                     }`}
                                 >
-                                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
-                                        {st.nombre.charAt(0)}{st.apellido1.charAt(0)}
-                                    </div>
-                                    <span>{st.apellido1} {st.nombre}</span>
+                                    <StudentAvatar student={st} size="sm" />
+                                    <span className="whitespace-nowrap">{formatStudentFullName(st)}</span>
                                 </button>
                             );
                         })}
@@ -178,7 +177,7 @@ export const TabletModeView: React.FC<TabletModeViewProps> = ({
                     timerStartTime={headerData.timerStartTime}
                     timerStatus={headerData.timerStatus || 'idle'}
                     timerRemainingSeconds={headerData.timerRemainingSeconds}
-                    studentName={`${activeStudent?.nombre} ${activeStudent?.apellido1}`}
+                    studentName={formatStudentFullName(activeStudent)}
                     onUpdateHeaderData={onUpdateHeaderData}
                 />
             </div>
@@ -400,9 +399,10 @@ export const TabletModeView: React.FC<TabletModeViewProps> = ({
                 contrastMode === 'dark' ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-200'
             } backdrop-blur-md flex items-center justify-between gap-4 z-40`}>
                 <div className="flex items-center gap-3">
+                    <StudentAvatar student={activeStudent} size="md" />
                     <div className="text-left">
                         <span className="text-[10px] uppercase font-bold opacity-60 block">Alumno</span>
-                        <span className="font-extrabold text-sm">{activeStudent?.apellido1}, {activeStudent?.nombre}</span>
+                        <span className="font-extrabold text-sm">{formatStudentFullName(activeStudent)}</span>
                     </div>
                     <div className="h-8 w-px bg-white/20"></div>
                     <div className="text-left">

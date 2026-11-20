@@ -8,6 +8,7 @@ import {
 } from '../components/icons';
 import { useAppContext } from '../context/AppContext';
 import { generateGroupsPDF } from '../services/reportGenerator';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 const groupColors = [
   'bg-red-200 border-red-300', 'bg-blue-200 border-blue-300', 
@@ -137,17 +138,11 @@ const DefinirGruposView: React.FC = () => {
                     <ul className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
                         {filteredStudents.map((student, index) => (
                             <li key={student.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
-                                <div className="flex items-center">
-                                    <span className="text-sm font-medium text-gray-500 w-8">{index + 1}.</span>
-                                    {student.fotoUrl ? (
-                                        <img src={student.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover mr-3 border" />
-                                    ) : (
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs mr-3 border border-blue-200">
-                                            {`${(student.nombre?.[0] || '').toUpperCase()}${(student.apellido1?.[0] || '').toUpperCase()}`}
-                                        </div>
-                                    )}
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm font-medium text-gray-500 w-7">{index + 1}.</span>
+                                    <StudentAvatar student={student} size="md" />
                                     <div>
-                                        <p className="font-semibold text-gray-800">{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</p>
+                                        <p className="font-semibold text-gray-800">{formatStudentFullName(student)}</p>
                                         <p className="text-xs text-gray-500">{student.grupo || 'Sin grupo académico'}</p>
                                     </div>
                                 </div>
@@ -182,17 +177,18 @@ const DefinirGruposView: React.FC = () => {
                                         <TrashIcon className="w-5 h-5" />
                                     </button>
                                 </div>
-                                <ul className="text-sm text-gray-700 list-disc list-inside">
+                                <div className="flex flex-wrap gap-2 mt-2">
                                     {members.length > 0 ? (
                                         members.map(m => (
-                                            <li key={m.id}>
-                                                {`${m.apellido1 || ''} ${m.apellido2 || ''}, ${m.nombre || ''}`.trim()}
-                                            </li>
+                                            <div key={m.id} className="inline-flex items-center gap-2 bg-white/80 border border-black/10 rounded-full px-2.5 py-1 text-xs font-medium text-gray-800">
+                                                <StudentAvatar student={m} size="xs" />
+                                                <span>{formatStudentFullName(m)}</span>
+                                            </div>
                                         ))
                                     ) : (
-                                        <li className="list-none text-xs text-gray-400 italic">Sin alumnos asignados</li>
+                                        <p className="text-xs text-gray-500 italic">Sin alumnos asignados</p>
                                     )}
-                                </ul>
+                                </div>
                             </div>
                         );
                     })}

@@ -9,6 +9,7 @@ import { Student, ServiceRole, Service, PracticeGroup, StudentRoleAssignment } f
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 interface RotationRow {
     student: Student;
@@ -541,8 +542,8 @@ export const RotacionBrigadaView: React.FC = () => {
                                         key={st.id} 
                                         className="px-2.5 py-1 bg-white text-amber-900 border border-amber-300 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5"
                                     >
-                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                        {st.apellido1} {st.apellido2}, {st.nombre}
+                                        <StudentAvatar student={st} size="xs" />
+                                        {formatStudentFullName(st)}
                                     </span>
                                 ))}
                             </div>
@@ -628,11 +629,9 @@ export const RotacionBrigadaView: React.FC = () => {
                                             {idx + 1}
                                         </td>
                                         <td className="p-3 font-semibold text-gray-900">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-[10px] flex-shrink-0">
-                                                    {row.student.nombre.charAt(0)}{row.student.apellido1.charAt(0)}
-                                                </div>
-                                                <span>{row.student.apellido1} {row.student.apellido2}, {row.student.nombre}</span>
+                                            <div className="flex items-center gap-2.5">
+                                                <StudentAvatar student={row.student} size="xs" />
+                                                <span>{formatStudentFullName(row.student)}</span>
                                             </div>
                                         </td>
                                         <td className="p-3">
@@ -705,13 +704,16 @@ export const RotacionBrigadaView: React.FC = () => {
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => setSelectedStudentTimeline(null)}>
                     <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center border-b pb-3">
-                            <div>
-                                <h3 className="text-base font-bold text-gray-900">
-                                    Historial de Rotación: {activeTimelineStudent.student.nombre} {activeTimelineStudent.student.apellido1}
-                                </h3>
-                                <p className="text-xs text-gray-500">
-                                    Servicios en los que ha participado y puestos asignados
-                                </p>
+                            <div className="flex items-center gap-3">
+                                <StudentAvatar student={activeTimelineStudent.student} size="md" />
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900">
+                                        Historial de Rotación: {formatStudentFullName(activeTimelineStudent.student)}
+                                    </h3>
+                                    <p className="text-xs text-gray-500">
+                                        Servicios en los que ha participado y puestos asignados
+                                    </p>
+                                </div>
                             </div>
                             <button onClick={() => setSelectedStudentTimeline(null)} className="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
                         </div>
@@ -966,12 +968,10 @@ export const RotacionBrigadaView: React.FC = () => {
                                                 >
                                                     {/* Student Info */}
                                                     <div className="flex items-center gap-3 min-w-[240px]">
-                                                        <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-xs flex-shrink-0 border border-slate-200">
-                                                            {st.nombre.charAt(0)}{st.apellido1.charAt(0)}
-                                                        </div>
+                                                        <StudentAvatar student={st} size="sm" />
                                                         <div>
                                                             <div className="font-bold text-xs text-gray-900">
-                                                                {st.apellido1} {st.apellido2}, {st.nombre}
+                                                                {formatStudentFullName(st)}
                                                             </div>
                                                             <div className="flex items-center gap-2 mt-0.5">
                                                                 {group ? (

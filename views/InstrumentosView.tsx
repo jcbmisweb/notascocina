@@ -4,6 +4,7 @@ import { downloadPdfWithTables, downloadExcel } from '../components/printUtils';
 import { ExportButtons } from '../components/ExportButtons';
 import { useAppContext } from '../context/AppContext';
 import { InstrumentoEvaluacion, EvaluationActivity, Student, AcademicGrades, StudentCalculatedGrades, ActivityGrade } from '../types';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 
 interface InstrumentoFormModalProps {
@@ -298,13 +299,13 @@ const GradesMatrix: React.FC<{
             <table className="min-w-full text-xs">
                 <thead className="bg-gray-200">
                     <tr>
-                        <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 bg-gray-200">Alumno</th>
+                        <th className="p-2 border font-semibold text-gray-600 min-w-[220px] text-left sticky left-0 bg-gray-200 z-10">Alumno</th>
                         {instrument.activities.map(act => (
                             <th key={act.id} className="p-2 border font-semibold text-gray-600 text-center" colSpan={4}>{act.name} ({act.trimester.toUpperCase()})</th>
                         ))}
                     </tr>
                     <tr>
-                        <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 bg-gray-200"></th>
+                        <th className="p-2 border font-semibold text-gray-600 min-w-[220px] text-left sticky left-0 bg-gray-200 z-10"></th>
                         {instrument.activities.map(act => {
                             const isLockedNorm = sortedStudents.length > 0 && !!(instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedNormal;
                             const isLockedR1 = sortedStudents.length > 0 && !!(instrumentGrades[sortedStudents[0].id]?.[act.id] as ActivityGrade)?.isLockedRec1;
@@ -367,8 +368,11 @@ const GradesMatrix: React.FC<{
                             onClick={() => setSelectedStudentId(student.id)}
                             className={`group cursor-pointer ${index % 2 !== 0 ? 'bg-blue-50' : 'bg-green-50'} hover:bg-orange-100 ${selectedStudentId === student.id ? 'bg-orange-200' : ''}`}
                         >
-                            <td className={`p-2 border text-left font-medium text-gray-800 w-48 sticky left-0 group-hover:bg-orange-100 ${index % 2 !== 0 ? 'bg-blue-50' : 'bg-green-50'} ${selectedStudentId === student.id ? 'bg-orange-200' : ''}`}>
-                                {`${student.apellido1} ${student.apellido2}, ${student.nombre}`}
+                            <td className={`p-2 border text-left font-medium text-gray-800 min-w-[220px] sticky left-0 z-10 group-hover:bg-orange-100 ${index % 2 !== 0 ? 'bg-blue-50' : 'bg-green-50'} ${selectedStudentId === student.id ? 'bg-orange-200' : ''}`}>
+                                <div className="flex items-center gap-2">
+                                    <StudentAvatar student={student} size="xs" />
+                                    <span className="truncate">{formatStudentFullName(student)}</span>
+                                </div>
                             </td>
                             {instrument.activities.map(act => {
                                 const grades = instrumentGrades[student.id]?.[act.id];

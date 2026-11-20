@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { UsersIcon, CheckCircleIcon, SaveIcon, MessageSquareIcon } from '../components/icons';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 interface CoevaluacionItem {
     participacion: number; // +0.5 or -0.5
@@ -100,9 +101,11 @@ export default function CoevaluacionDiabolicaView() {
 
                 {selectedStudent && (
                     <div className="space-y-6">
-                        <h3 className="text-lg font-bold text-gray-800 border-b pb-2 flex items-center gap-2">
-                            <UsersIcon className="w-5 h-5 text-red-600" />
-                            Evaluaciones realizadas por <span className="text-red-600">{selectedStudent.nombre} {selectedStudent.apellido1}</span> a sus compañeros:
+                        <h3 className="text-lg font-bold text-gray-800 border-b pb-3 flex items-center gap-3">
+                            <StudentAvatar student={selectedStudent} size="md" />
+                            <span>
+                                Evaluaciones realizadas por <span className="text-red-600">{formatStudentFullName(selectedStudent)}</span> a sus compañeros:
+                            </span>
                         </h3>
 
                         <div className="grid grid-cols-1 gap-6">
@@ -119,9 +122,9 @@ export default function CoevaluacionDiabolicaView() {
                                 return (
                                     <div key={peer.id} className="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b">
-                                            <h4 className="font-bold text-gray-900 text-base flex items-center gap-2">
-                                                <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-                                                Compañero/a: {peer.apellido1} {peer.apellido2}, {peer.nombre}
+                                            <h4 className="font-bold text-gray-900 text-base flex items-center gap-2.5">
+                                                <StudentAvatar student={peer} size="sm" />
+                                                <span>Compañero/a: {formatStudentFullName(peer)}</span>
                                             </h4>
                                             <div className="bg-white px-3 py-1.5 rounded-lg border shadow-sm text-xs font-extrabold text-gray-800">
                                                 Subtotal Propuesto: <span className={subtotal >= 0 ? 'text-emerald-600' : 'text-red-600'}>{subtotal > 0 ? `+${subtotal.toFixed(1)}` : subtotal.toFixed(1)} pts</span>

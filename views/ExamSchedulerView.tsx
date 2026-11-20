@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { Student, TeacherData, InstituteData } from '../types';
 import { ClockIcon, SearchIcon, ArrowRightIcon, FileTextIcon, PrinterIcon } from '../components/icons';
 import { generateExamSchedulePDF } from '../services/reportGenerator';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 const PAGE_MARGIN = 15;
 
@@ -150,10 +151,10 @@ const ExamSchedulerView: React.FC = () => {
                                 onClick={() => handleAddStudent(student.id)}
                                 className="w-full text-left flex items-center justify-between p-2 hover:bg-blue-50 rounded-md group"
                             >
-                                <div className="flex items-center">
-                                    <img src={student.fotoUrl} alt="" className="w-8 h-8 rounded-full mr-3 object-cover"/>
+                                <div className="flex items-center gap-3">
+                                    <StudentAvatar student={student} size="sm" />
                                     <div>
-                                        <p className="text-sm font-medium">{student.apellido1} {student.apellido2}, {student.nombre}</p>
+                                        <p className="text-sm font-medium">{formatStudentFullName(student)}</p>
                                         <p className="text-xs text-gray-500">{student.grupo}</p>
                                     </div>
                                 </div>
@@ -188,7 +189,12 @@ const ExamSchedulerView: React.FC = () => {
                                             <td className="px-4 py-3 text-center font-bold text-gray-500">{index + 1}</td>
                                             <td className="px-4 py-3 text-center font-mono text-blue-600 font-medium">{times.entry}</td>
                                             <td className="px-4 py-3 text-center font-mono text-gray-600">{times.exit}</td>
-                                            <td className="px-4 py-3 font-medium">{student.apellido1} {student.apellido2}, {student.nombre}</td>
+                                            <td className="px-4 py-3 font-medium">
+                                                <div className="flex items-center gap-2.5">
+                                                    <StudentAvatar student={student} size="sm" />
+                                                    <span>{formatStudentFullName(student)}</span>
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex justify-center space-x-1">
                                                     <button onClick={() => handleMoveUp(index)} disabled={index === 0} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30">↑</button>

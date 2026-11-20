@@ -5,6 +5,7 @@ import StatCard from '../components/StatCard';
 import ActionCard from '../components/ActionCard';
 import { FileTextIcon, BookOpenIcon, PencilIcon, ClipboardListIcon, RotateCcwIcon, UsersIcon, CheckIcon, AlertTriangleIcon, RefreshCwIcon, ChefHatIcon } from '../components/icons';
 import { ModalNotasExamenesTeoricos } from '../components/ModalNotasExamenesTeoricos';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 interface ModuleDashboardViewProps {
     module: 'pc' | 'optativa' | 'proyecto';
@@ -233,7 +234,12 @@ const ModuleDashboardView: React.FC<ModuleDashboardViewProps> = ({ module, onNav
                                 .map(student => {
                                 return (
                                     <tr key={student.id} className="bg-white border-b hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-medium text-gray-900">{student.nombre} {student.apellido1} {student.apellido2}</td>
+                                        <td className="px-6 py-3 font-medium text-gray-900">
+                                            <div className="flex items-center gap-2.5">
+                                                <StudentAvatar student={student} size="sm" />
+                                                <span>{formatStudentFullName(student)}</span>
+                                            </div>
+                                        </td>
                                         {module === 'pc' ? (
                                             <>
                                                 {(() => {

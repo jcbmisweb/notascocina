@@ -8,6 +8,7 @@ import { ExportButtons } from '../components/ExportButtons';
 import { useAppContext } from '../context/AppContext';
 import { calculateStudentPeriodAverages, calculateModularGrades, calculateStudentPcGradeComplete } from '../services/gradeCalculator';
 import { generateAcademicReportPDF, generateGenericTablePDF } from '../services/reportGenerator';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 const EvaluacionInstrumentosTab: React.FC = () => {
     const { 
@@ -166,7 +167,7 @@ const EvaluacionInstrumentosTab: React.FC = () => {
                     <table className="min-w-full text-xs text-center border-collapse">
                         <thead className="bg-gray-100 sticky top-0 z-10">
                             <tr>
-                                <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 bg-gray-100">Alumno</th>
+                                <th className="p-2 border font-semibold text-gray-600 min-w-[220px] text-left sticky left-0 bg-gray-100 z-20">Alumno</th>
                                 {activities.map(act => (
                                     <th key={act.id} className="p-2 border font-semibold text-gray-600" title={act.instrumentName}>
                                         <div className="flex items-center justify-center gap-2">
@@ -186,7 +187,12 @@ const EvaluacionInstrumentosTab: React.FC = () => {
                         <tbody>
                              {sortedStudents.map((student, index) => (
                                 <tr key={student.id} className={`group ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-yellow-50`}>
-                                    <td className={`p-1 border text-left font-semibold text-gray-800 w-48 sticky left-0 group-hover:bg-yellow-50 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</td>
+                                    <td className={`p-1.5 border text-left font-semibold text-gray-800 min-w-[220px] sticky left-0 z-10 group-hover:bg-yellow-50 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                                        <div className="flex items-center gap-2">
+                                            <StudentAvatar student={student} size="xs" />
+                                            <span className="truncate">{formatStudentFullName(student)}</span>
+                                        </div>
+                                    </td>
                                     {activities.map(act => (
                                         <td key={act.id} className="border">
                                             <input
@@ -562,7 +568,7 @@ const GestionAcademicaView: React.FC = () => {
                 <table className="min-w-full text-xs text-center border-collapse">
                     <thead className="bg-gray-100 sticky top-0 z-20 shadow-sm">
                         <tr>
-                            <th className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 z-30 bg-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={2}>Alumno</th>
+                            <th className="p-2 border font-semibold text-gray-600 min-w-[220px] text-left sticky left-0 z-30 bg-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" rowSpan={2}>Alumno</th>
                             {ACADEMIC_EVALUATION_STRUCTURE.periods.map(period => (<th key={period.key} className="p-2 border font-semibold text-gray-600 bg-gray-100" colSpan={period.instruments.length + 1}>{period.name}</th>))}
                             <th className="p-2 border font-semibold text-gray-600 bg-amber-50" rowSpan={2}>Media PC (Teo/Prac)</th>
                             <th className="p-2 border font-semibold text-gray-600 bg-stone-50" rowSpan={2}>+ Prácticas (FEM)</th>
@@ -581,7 +587,12 @@ const GestionAcademicaView: React.FC = () => {
                                 <tr><td colSpan={100} className="bg-gray-200 font-bold p-1 text-left pl-4 sticky top-[68px] z-10">{groupName}</td></tr>
                                 {studentsInGroup.map((student, index) => (
                                 <tr key={student.id} className={`group hover:bg-orange-100 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                                        <td className={`p-1 border text-left font-semibold text-gray-800 w-48 sticky left-0 z-10 group-hover:bg-orange-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</td>
+                                        <td className={`p-1.5 border text-left font-semibold text-gray-800 min-w-[220px] sticky left-0 z-10 group-hover:bg-orange-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                                            <div className="flex items-center gap-2">
+                                                <StudentAvatar student={student} size="xs" />
+                                                <span className="truncate">{formatStudentFullName(student)}</span>
+                                            </div>
+                                        </td>
                                         {ACADEMIC_EVALUATION_STRUCTURE.periods.flatMap(period => {
                                             const studentAverage = finalGradesAndAverages.studentGrades[student.id].averages[period.key];
                                             return [
@@ -761,7 +772,7 @@ const GestionAcademicaView: React.FC = () => {
                         <table className="min-w-full text-xs text-center border-collapse">
                             <thead className="bg-gray-100 sticky top-0 z-10 font-semibold text-gray-700">
                                 <tr className="border-b">
-                                    <th className="p-3 border text-left w-48 sticky left-0 bg-gray-100">Alumno</th>
+                                    <th className="p-3 border text-left min-w-[220px] sticky left-0 bg-gray-100 z-20">Alumno</th>
                                     <th className="p-3 border w-44">Régimen de Prácticas</th>
                                     <th className="p-3 border text-left">Variables y Calificaciones de Prácticas</th>
                                     <th className="p-3 border w-36">Nota Prácticas</th>
@@ -811,8 +822,11 @@ const GestionAcademicaView: React.FC = () => {
                                                 return (
                                                     <tr key={student.id} className={`hover:bg-indigo-50/10 border-b ${sIdx % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>
                                                         {/* Student Name */}
-                                                        <td className="p-3 border text-left font-semibold text-gray-800 w-48 sticky left-0 bg-inherit shadow-[1px_0_0_rgba(0,0,0,0.1)]">
-                                                            {`${student.apellido1} ${student.apellido2}, ${student.nombre}`}
+                                                        <td className="p-2.5 border text-left font-semibold text-gray-800 min-w-[220px] sticky left-0 z-10 bg-inherit shadow-[1px_0_0_rgba(0,0,0,0.1)]">
+                                                            <div className="flex items-center gap-2">
+                                                                <StudentAvatar student={student} size="xs" />
+                                                                <span className="truncate">{formatStudentFullName(student)}</span>
+                                                            </div>
                                                         </td>
 
                                                         {/* Régime selection Dropdown */}
@@ -1081,11 +1095,11 @@ const GestionAcademicaView: React.FC = () => {
                 <table className="min-w-full text-sm text-center">
                      <thead className="bg-gray-100">
                         <tr>
-                            <th className="p-2 border font-semibold text-gray-600 text-left">Alumno</th>
+                            <th className="p-2 border font-semibold text-gray-600 text-left min-w-[220px] sticky left-0 bg-gray-100 z-20">Alumno</th>
                             {COURSE_MODULES.map(module => <th key={module.name} colSpan={module.trimesters + 3} className="p-2 border font-semibold text-gray-600">{module.name}</th>)}
                         </tr>
                          <tr>
-                            <th className="p-2 border font-semibold text-gray-600 text-left"></th>
+                            <th className="p-2 border font-semibold text-gray-600 text-left min-w-[220px] sticky left-0 bg-gray-100 z-20"></th>
                             {COURSE_MODULES.flatMap(module => [
                                 <th key={`${module.name}-t1`} className="p-2 border font-semibold text-gray-500 text-[10px]">T1</th>,
                                 <th key={`${module.name}-t2`} className="p-2 border font-semibold text-gray-500 text-[10px]">T2</th>,
@@ -1099,7 +1113,12 @@ const GestionAcademicaView: React.FC = () => {
                     <tbody>
                          {students.map((student, index) => (
                             <tr key={student.id} className={`group hover:bg-orange-100 ${index % 2 !== 0 ? 'bg-blue-50' : 'bg-green-50'}`}>
-                                <td className={`p-1 border text-left font-semibold text-gray-800 sticky left-0 group-hover:bg-orange-100`}>{`${student.apellido1} ${student.apellido2}, ${student.nombre}`}</td>
+                                <td className={`p-1.5 border text-left font-semibold text-gray-800 min-w-[220px] sticky left-0 z-10 group-hover:bg-orange-100 ${index % 2 !== 0 ? 'bg-blue-50' : 'bg-green-50'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <StudentAvatar student={student} size="xs" />
+                                        <span className="truncate">{formatStudentFullName(student)}</span>
+                                    </div>
+                                </td>
                                 {COURSE_MODULES.map(module => {
                                     const studentCourseGrades = localCourseGrades[student.id] || {};
                                     const isConvalidated = studentCourseGrades[module.name]?.isConvalidated;

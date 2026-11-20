@@ -7,6 +7,7 @@ import { SearchIcon, SaveIcon, PrinterIcon, FileTextIcon } from '../components/i
 import { CookingCountdownTimer } from '../components/ExamenPractico/CookingCountdownTimer';
 import { TabletModeView } from '../components/ExamenPractico/TabletModeView';
 import { useAppContext } from '../context/AppContext';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 interface ExamenesPracticosViewProps {
     isFocusMode: boolean;
@@ -219,9 +220,12 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
         return (
             <div className="p-4 sm:p-6 h-full flex flex-col">
                 <header className="flex flex-wrap justify-between items-center gap-4 mb-4 pb-4 border-b bg-white p-4 rounded-2xl shadow-xs">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-800">Evaluando a: {student?.nombre} {student?.apellido1} {student?.apellido2}</h2>
-                        <p className="text-sm text-gray-500">Rúbrica de Criterios (1º Trimestre)</p>
+                    <div className="flex items-center gap-3.5">
+                        <StudentAvatar student={student} size="xl" />
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-800">Evaluando a: {formatStudentFullName(student)}</h2>
+                            <p className="text-sm text-gray-500">Rúbrica de Criterios (1º Trimestre)</p>
+                        </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <button
@@ -313,12 +317,15 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
             <div className="p-4 sm:p-6 h-full flex flex-col bg-gray-50/50">
                 {/* Header with Title and Big Scores */}
                 <header className="flex flex-wrap justify-between items-center gap-4 mb-4 pb-4 border-b bg-white p-4 rounded-2xl shadow-xs">
-                    <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full inline-block mb-1">
-                            {currentPeriodConfig.label} • 100 Puntos
-                        </span>
-                        <h2 className="text-xl font-extrabold text-gray-900">{student?.apellido1} {student?.apellido2}, {student?.nombre}</h2>
-                        <p className="text-xs text-gray-500 mt-0.5">Baremo oficial de 100 puntos y checklist de verificación obligatoria</p>
+                    <div className="flex items-center gap-3.5">
+                        <StudentAvatar student={student} size="xl" />
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full inline-block mb-1">
+                                {currentPeriodConfig.label} • 100 Puntos
+                            </span>
+                            <h2 className="text-xl font-extrabold text-gray-900">{formatStudentFullName(student)}</h2>
+                            <p className="text-xs text-gray-500 mt-0.5">Baremo oficial de 100 puntos y checklist de verificación obligatoria</p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -656,17 +663,10 @@ const ExamenesPracticosView: React.FC<ExamenesPracticosViewProps> = ({ isFocusMo
                                         : 'border-transparent hover:bg-gray-50'
                                 }`}
                             >
-                                <img
-                                    src={student.fotoUrl}
-                                    alt=""
-                                    className="w-8 h-8 rounded-full object-cover mr-3 border border-gray-200"
-                                    onError={(e: any) => {
-                                        e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.nombre + ' ' + student.apellido1);
-                                    }}
-                                />
+                                <StudentAvatar student={student} size="sm" className="mr-3" />
                                 <div className="flex-1 min-w-0">
                                     <span className="block text-xs font-semibold text-gray-800 truncate">
-                                        {student.apellido1} {student.apellido2}, {student.nombre}
+                                        {formatStudentFullName(student)}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-shrink-0">

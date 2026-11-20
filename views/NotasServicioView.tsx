@@ -4,6 +4,7 @@ import { SERVICE_GRADE_WEIGHTS, PRE_SERVICE_BEHAVIOR_ITEMS, BEHAVIOR_RATING_MAP 
 import { ExportIcon, PlusIcon, TrashIcon, PrinterIcon, LockClosedIcon, LockOpenIcon } from '../components/icons';
 import { downloadPdfWithTables } from '../components/printUtils';
 import { useAppContext } from '../context/AppContext';
+import { StudentAvatar, formatStudentFullName } from '../components/StudentAvatar';
 
 declare var XLSX: any;
 
@@ -273,7 +274,7 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                             <table className="min-w-full text-xs text-center border-collapse">
                                 <thead className="bg-gray-100 sticky top-0 z-10">
                                     <tr>
-                                        <th rowSpan={2} className="p-2 border font-semibold text-gray-600 w-48 text-left sticky left-0 bg-gray-100">Alumno</th>
+                                        <th rowSpan={2} className="p-2 border font-semibold text-gray-600 min-w-[220px] text-left sticky left-0 bg-gray-100 z-20">Alumno</th>
                                         {sortedServices.map(service => (
                                             <th key={service.id} rowSpan={2} className="p-2 border font-semibold text-gray-600 min-w-[120px]">
                                                 <button onClick={() => onNavigateToService(service.id, 'evaluation')} className="hover:text-blue-600 w-full">
@@ -297,7 +298,12 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                                                 const averages = calculatedStudentGrades[student.id]?.serviceAverages || { t1: null, t2: null, t3: null };
                                                 return (
                                                 <tr key={student.id} className={`group ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-blue-50`}>
-                                                    <td className={`p-1 border text-left font-semibold text-gray-800 w-48 sticky left-0 group-hover:bg-blue-50 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</td>
+                                                    <td className={`p-1.5 border text-left font-semibold text-gray-800 min-w-[220px] sticky left-0 z-10 group-hover:bg-blue-50 ${index % 2 !== 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                                                        <div className="flex items-center gap-2">
+                                                            <StudentAvatar student={student} size="xs" />
+                                                            <span className="truncate">{formatStudentFullName(student)}</span>
+                                                        </div>
+                                                    </td>
                                                     {sortedServices.map(service => {
                                                         const scoreInfo = scores[service.id];
                                                         const finalScore = scoreInfo?.final;
@@ -341,7 +347,12 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                                 <tbody>
                                     {activeStudents.map(student => (
                                         <tr key={student.id} className="hover:bg-gray-50">
-                                            <td className="p-2 border text-left font-medium text-gray-800">{`${student.apellido1 || ''} ${student.apellido2 || ''}, ${student.nombre || ''}`.trim()}</td>
+                                            <td className="p-2 border text-left font-medium text-gray-800 min-w-[215px]">
+                                                <div className="flex items-center gap-2">
+                                                    <StudentAvatar student={student} size="xs" />
+                                                    <span>{formatStudentFullName(student)}</span>
+                                                </div>
+                                            </td>
                                             {sortedServices.map(s => {
                                                 const evalData = serviceEvaluations.find(e => e.serviceId === s.id);
                                                 // Find any pre-service day eval for this service
@@ -486,7 +497,12 @@ const NotasServicioView: React.FC<NotasServicioViewProps> = ({ onNavigateToServi
                                                     const isPresent = evalInfo.attendance ?? true;
                                                     return (
                                                         <tr key={student.id} className="hover:bg-gray-50">
-                                                            <td className="p-2 border font-medium text-gray-800">{student.apellido1} {student.apellido2}, {student.nombre}</td>
+                                                            <td className="p-2 border font-medium text-gray-800 min-w-[215px]">
+                                                                <div className="flex items-center gap-2">
+                                                                    <StudentAvatar student={student} size="xs" />
+                                                                    <span>{formatStudentFullName(student)}</span>
+                                                                </div>
+                                                            </td>
                                                             <td className="p-2 border text-center">
                                                                 <input 
                                                                     type="checkbox" 
